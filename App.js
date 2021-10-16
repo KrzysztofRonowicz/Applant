@@ -1,10 +1,15 @@
 import React from 'react';
 import * as eva from '@eva-design/eva';
 import Start from './pages/authorization/start';
-import { ApplicationProvider } from '@ui-kitten/components';
+import { ApplicationProvider, IconRegistry } from '@ui-kitten/components';
+import { EvaIconsPack } from '@ui-kitten/eva-icons';
+import { default as theme } from './assets/custom-theme.json';
 
 export default () => (
-    <ApplicationProvider {...eva} theme={eva.light}>
-        <Start />
-    </ApplicationProvider>
+    <>
+        <IconRegistry icons={EvaIconsPack} />
+        <ApplicationProvider {...eva} theme={{ ...eva.light, ...theme }}>
+            <Start />
+        </ApplicationProvider>
+    </>
 );
