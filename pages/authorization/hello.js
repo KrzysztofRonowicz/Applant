@@ -2,16 +2,28 @@ import React, { Component, useEffect, useState } from 'react';
 import { Image } from 'react-native';
 import { Layout, Text } from '@ui-kitten/components';
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import Home from '../main/home';
+import Board from '../main/board';
+import MainNavigator from '../main/mainNavigator';
+import AuthorizationNavigator from './authorizationNavigator';
+import { AppContext } from '../../context';
+import { render } from 'react-dom';
 
-const Hello = ({navigation}) => {
-    const [isLogged, setIsLogged] = useState(false);
-    useEffect(() => {
-        removeToken();
-        getToken();
-    }, []);
+class Hello extends React.Component {
+    constructor() {
+        super();
+        this.state = {
+            isLogged: false,
+            isLoaded: false,
+        };
+    }
 
-    async function removeToken() {
+    componentDidMount() {
+        setTimeout(() => this.setState({ isLoaded: true }), 1000);
+        this.removeToken();
+        this.getToken();
+    }
+
+    async removeToken() {
         try {
             await AsyncStorage.removeItem('auth-token');
             return true;
@@ -20,28 +32,40 @@ const Hello = ({navigation}) => {
         }
     }
 
-    async function getToken() {
+    async getToken() {
         try {
             const auth_token = await AsyncStorage.getItem('auth-token');
             if (auth_token !== null) {
-                setTimeout(()=> setIsLogged(true), 1000);
+                this.setState({ isLogged: true});
             } else {
-                setTimeout(()=>navigation.navigate('Login') , 1000);
+                this.setState({ isLogged: false });
             }
         } catch (error) {
-            setTimeout(()=>navigation.navigate('Login') , 1000);
+            this.setState({ isLogged: false });
         }
     }
 
-    return(
-        isLogged ? 
-        <Home/> 
-        :
-        <Layout style={{flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#25523B', flexDirection: 'row'}}>
-            <Image source={require('../../assets/applant_s.png')} style={{width: 60, height: 60, borderRadius: 10, marginRight: 20}}/>
-            <Text style={{color: 'white', fontSize: 50, fontFamily: 'Courgette'}}>Applant</Text>
-        </Layout>
-    );
+    render() {
+        return(
+        <AppContext.Provider value={{
+            state: this.state,
+            setLoginState: (state) => this.setState({ isLogged: state }),
+        }}>
+            
+                {this.state.isLoaded == true ?
+                   
+                        this.state.isLogged ? (<MainNavigator />) : (<AuthorizationNavigator />)
+                   
+                    :
+                    <Layout style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#25523B', flexDirection: 'row' }}>
+                        <Image source={require('../../assets/applant_s.png')} style={{ width: 60, height: 60, borderRadius: 10, marginRight: 20 }} />
+                        <Text style={{ color: 'white', fontSize: 50, fontFamily: 'Courgette' }}>Applant</Text>
+                    </Layout>
+                }
+            
+        </AppContext.Provider>
+        );
+    }
 }
     
 

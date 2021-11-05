@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { registerRootComponent }from 'expo';
 import *as Font from 'expo-font';
 import AuthorizationNavigator from './authorizationNavigator'
+import Hello from './hello';
 
 let customFonts = {
 	'Courgette': require('../../assets/fonts/Courgette-Regular.ttf'),
@@ -26,7 +27,7 @@ class Start extends Component {
 
     render(){ 
         return(
-            this.state.fontsLoaded ? <AuthorizationNavigator/> : <></>
+            this.state.fontsLoaded ? <Hello/> : <></>
         ) 
     }
 }

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { TouchableWithoutFeedback, StyleSheet, View, Button, Image, Keyboard, BackHandler } from 'react-native';
+import { TouchableWithoutFeedback, StyleSheet, View, Image, Keyboard, BackHandler, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as API from '../../api/apiMethods';
-import { Layout, Text, Icon, Input } from '@ui-kitten/components';
-import Home from '../main/home';
+import { Layout, Text, Icon, Input, Button } from '@ui-kitten/components';
+import Board from '../main/board';
+import { AppContext } from '../../context';
 
 const AlertIcon = (props) => (
     <Icon {...props} name='alert-circle-outline'/>
@@ -12,10 +13,11 @@ const AlertIcon = (props) => (
 const Login = ({navigation}) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [isLogged, setIsLogged] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [errorPath, setErrorPath] = useState('');
     const [secureTextEntry, setSecureTextEntry] = useState(true);
+
+    const context = React.useContext(AppContext);
       
     const handleBackButton = () => {
         BackHandler.exitApp();
@@ -70,10 +72,12 @@ const Login = ({navigation}) => {
             if (response.status === 200) {
                 setErrorPath(''),
                 AsyncStorage.setItem('auth-token', response.headers['auth-token']);
-                setIsLogged(true);
+                context.setLoginState(true);
+                // setLoginState(true);
 			}
         } catch (error) {
             if (error.response.status === 400) {
+                context.setLoginState(false);
                 setErrorPath(error.response.data.path),
                 setErrorMessage(error.response.data.message)
             }
@@ -81,7 +85,6 @@ const Login = ({navigation}) => {
     }
 
     return(
-        isLogged ? <Home/> :
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
             <Layout style={{flex: 1, justifyContent: 'center', backgroundColor: '#25523B',}}>
                 <Image 
@@ -92,6 +95,9 @@ const Login = ({navigation}) => {
                     }}
                 />
                 <View style={{position: 'absolute', backgroundColor: '#18241b', width: '100%', height: '100%', opacity: .2}}></View>
+                <TouchableOpacity style={{position: 'absolute', right: 20, top: 40}}  onPress={() => navigation.navigate('Registration')}>
+                    <Icon fill='white' name={'arrow-forward'} style={{width: 35, height:35}}/>
+                </TouchableOpacity>
                 <Text style={{color: 'white', fontSize: 50, fontFamily: 'Quicksand', alignSelf: 'center', marginBottom: 20}}>Witaj!</Text>
                 <Text style={{color: 'white', fontSize: 20, fontFamily: 'Quicksand', alignSelf: 'center'}}>Zaloguj się na swoje konto</Text>
                 <View 
@@ -124,8 +130,15 @@ const Login = ({navigation}) => {
                         onChangeText={nextValue => setPassword(nextValue)}
                         style={{marginBottom: errorPath === 'password' ? 0 : 18}}
                     />
-                    <Button onPress={() => connect()} title='Zaloguj' color={'#52afdc'}/>
-                </View>  
+                    <TouchableOpacity style={{alignSelf: 'flex-end', marginBottom: 15}}><Text style={{color: 'grey'}}>Zapomniałeś hasła?</Text></TouchableOpacity>
+                    <Button onPress={() => connect()}>ZALOGUJ</Button>
+                </View>
+                <View style={{bottom: 20, position: 'absolute', flexDirection: 'row', alignSelf: 'center'}}>
+                    <Text style={{fontSize: 17, color: '#F1F1F1', fontFamily: 'Quicksand'}}> Nie posiadasz konta? </Text> 
+                    <TouchableOpacity onPress={() => navigation.navigate('Registration')}>
+                        <Text style={{fontWeight:'bold', fontSize: 17, color: '#F1F1F1', fontFamily: 'Quicksand'}}>Zarejestruj się</Text>
+                    </TouchableOpacity> 
+                </View>
             </Layout>
         </TouchableWithoutFeedback>
     )
@@ -147,7 +160,6 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: "400",
         alignSelf: 'flex-start',
-        //fontFamily: "opensans-regular",
         color: "grey",
     }
 });
