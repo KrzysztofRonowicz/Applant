@@ -17,6 +17,8 @@ export const alertsImages = (alert) => {
             return require('../alerts/rotation.png');
         case 'compost':
             return require('../alerts/compost.png');
+        case 'close':
+            return require('../alerts/close.png');
     }
 };
 

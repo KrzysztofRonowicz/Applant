@@ -24,6 +24,8 @@ export const colors = {
 	rotationLight: '#EDABF1',
 	lightDark: '#FFB92B',
 	lightLight: '#FFFB8E',
+	compostDark: '#665343',
+	compostLight: '#927F6E',
 	black: 'black',
 	white: 'white',
 };

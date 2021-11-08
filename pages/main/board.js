@@ -3,11 +3,8 @@ import { Layout, Text, MenuItem, OverflowMenu } from '@ui-kitten/components';
 import { BackHandler, StyleSheet, View, FlatList, TouchableOpacity, Image } from 'react-native';
 import {labels, colors, spacing, rounding} from '../../style/base';
 import { alertsImages, alertsImagesDarkColors } from '../../assets/alerts/alertsImages';
-import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
 import { Icon } from 'react-native-elements'
 import Plant from './plant';
-
-const Stack = createStackNavigator();
 
 const DATA = [
     {
@@ -30,7 +27,7 @@ const Ticket = ({name, alerts, onPlantSelect}) => (
 
         </View>
         <View style={styles.ticketContent}>
-            <TouchableOpacity style={{ alignSelf: 'flex-start' }} onLongPress={() => onPlantSelect(name)}>
+            <TouchableOpacity style={{ alignSelf: 'flex-start' }} onPress={() => onPlantSelect(name)}>
                 <Text style={styles.ticketName}>{name}</Text>
             </TouchableOpacity>
             <View style={styles.ticketButtons}>
@@ -46,35 +43,15 @@ const Ticket = ({name, alerts, onPlantSelect}) => (
     </View>
 )
 
-const Board = ({navigation}) => {
-    return(
-        <Stack.Navigator
-            initialRouteName="BoardMain"
-            screenOptions={{
-                headerShown: false,
-            }}
-        >
-            <Stack.Screen name="BoardMain" component={BoardMain}/>
-            <Stack.Screen 
-                name="Plant" 
-                component={Plant} 
-                options={{
-                    ...TransitionPresets.FadeFromBottomAndroid,
-                }} 
-            />
-        </Stack.Navigator>
-        // <BoardMain/>
-    );
-}
-
-const BoardMain = ({navigation}) => {
+const Board = () => {
     const [selectedIndex, setSelectedIndex] = useState(null);
     const [visible, setVisible] = useState(false);
     const [selectedPlant, setSelectedPlant] = useState(undefined);
+    const [plantVisible, setPlantVisible] = useState(false);
 
     const onPlantSelect = (e) => {
         setSelectedPlant(e);
-        navigation.navigate('Plant');
+        setPlantVisible(!plantVisible);
     };
 
     const onItemSelect = (index) => {
@@ -93,6 +70,8 @@ const BoardMain = ({navigation}) => {
     );
 
     return (
+        plantVisible ? 
+        <Plant plantId={selectedPlant} onClose={onPlantSelect}/> :
         <Layout style={styles.layout}>
             <View style={styles.header}>
                 <Text style={styles.title}>Terminarz</Text>

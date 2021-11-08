@@ -14,7 +14,7 @@ const Tab = createMaterialTopTabNavigator();
 
 const HeaderMainNavigator = () => {
 	return (
-		<View style={{ height: 90, justifyContent: 'space-between', alignItems: 'flex-end', backgroundColor: '#F8F8F8', flexDirection: 'row', paddingTop: 30, paddingHorizontal: 20, paddingBottom: 5}}>
+		<View style={{ height: 85, justifyContent: 'space-between', alignItems: 'flex-end', backgroundColor: '#F8F8F8', flexDirection: 'row', paddingTop: 30, paddingHorizontal: 20, paddingBottom: 5}}>
 			<Text style={{ color: '#25523B', fontSize: 30, fontFamily: 'Courgette' }}>Applant</Text>
 			{/* <Image source={require('../../assets/applant_s.png')} style={{ width: 40, height: 40, borderRadius: 5, marginLeft: 15 }} /> */}
 			<TouchableOpacity style={{ alignSelf: 'flex-end', marginBottom: 2, padding: 3, backgroundColor: '#DCDCDC', borderRadius: 20 }}>
