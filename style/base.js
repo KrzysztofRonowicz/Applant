@@ -26,6 +26,8 @@ export const colors = {
 	lightLight: '#FFFB8E',
 	compostDark: '#665343',
 	compostLight: '#927F6E',
+	humidityDark: '#90DEFF',
+	humidityLight: '#CAEEFF',
 	black: 'black',
 	white: 'white',
 };

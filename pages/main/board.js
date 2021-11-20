@@ -43,7 +43,7 @@ const Ticket = ({name, alerts, onPlantSelect}) => (
     </View>
 )
 
-const Board = () => {
+const Board = ({navigation}) => {
     const [selectedIndex, setSelectedIndex] = useState(null);
     const [visible, setVisible] = useState(false);
     const [selectedPlant, setSelectedPlant] = useState(undefined);
@@ -52,6 +52,11 @@ const Board = () => {
     const onPlantSelect = (e) => {
         setSelectedPlant(e);
         setPlantVisible(!plantVisible);
+    };
+
+    const onChat = () => {
+        onPlantSelect(undefined);
+        navigation.navigate('Chat');
     };
 
     const onItemSelect = (index) => {
@@ -71,7 +76,7 @@ const Board = () => {
 
     return (
         plantVisible ? 
-        <Plant plantId={selectedPlant} onClose={onPlantSelect}/> :
+        <Plant plantId={selectedPlant} onClose={onPlantSelect} onChat={onChat}/> :
         <Layout style={styles.layout}>
             <View style={styles.header}>
                 <Text style={styles.title}>Terminarz</Text>

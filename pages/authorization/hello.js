@@ -19,17 +19,18 @@ class Hello extends React.Component {
 
     componentDidMount() {
         setTimeout(() => this.setState({ isLoaded: true }), 1000);
+        // this.removeToken();
         this.getToken();
     }
 
-    // async removeToken() {
-    //     try {
-    //         await AsyncStorage.removeItem('auth-token');
-    //         return true;
-    //     } catch (error) {
-    //         setTimeout(()=>navigation.navigate('Login') , 1000);
-    //     }
-    // }
+    async removeToken() {
+        try {
+            await AsyncStorage.removeItem('auth-token');
+            return true;
+        } catch (error) {
+            setTimeout(()=>navigation.navigate('Login') , 1000);
+        }
+    }
 
     async getToken() {
         try {

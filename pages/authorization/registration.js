@@ -91,10 +91,10 @@ const Registration = ({navigation}) => {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
             <Layout style={{flex: 1, justifyContent: 'center', backgroundColor: '#25523B',}}>
                 <Image 
-                    source={require('../../assets/background1.jpg')} 
+                    source={require('../../assets/background1.png')} 
                     style={{
                         position: 'absolute', 
-                        resizeMode: 'cover',
+                        // resizeMode: 'cover',
                     }}
                 />
                 <View style={{position: 'absolute', backgroundColor: '#18241b', width: '100%', height: '100%', opacity: .2}}></View>

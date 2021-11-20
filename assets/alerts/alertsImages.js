@@ -19,6 +19,8 @@ export const alertsImages = (alert) => {
             return require('../alerts/compost.png');
         case 'close':
             return require('../alerts/close.png');
+        case 'humidity':
+            return require('../alerts/humidity.png');
     }
 };
 
@@ -38,5 +40,32 @@ export const alertsImagesDarkColors = (alert) => {
             return colors.temperatureDark;
         case 'rotation':
             return colors.rotationDark;
+        case 'compost':
+            return colors.compostDark;
+        case 'humidity':
+            return colors.humidityDark;
+    }
+};
+
+export const alertsImagesLightColors = (alert) => {
+    switch (alert) {
+        case 'water':
+            return colors.waterLight;
+        case 'bath':
+            return colors.bathLight;
+        case 'fertilization':
+            return colors.fertilizationLight;
+        case 'light':
+            return colors.lightLight;
+        case 'shower':
+            return colors.showerLight;
+        case 'temperature':
+            return colors.temperatureLight;
+        case 'rotation':
+            return colors.rotationLight;
+        case 'compost':
+            return colors.compostLight;
+        case 'humidity':
+            return colors.humidityLight;
     }
 };

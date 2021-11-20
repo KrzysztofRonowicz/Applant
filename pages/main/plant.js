@@ -4,6 +4,7 @@ import { BackHandler, StyleSheet, View, FlatList, TouchableOpacity, Image, Dimen
 import { labels, colors, spacing, rounding } from '../../style/base';
 import { alertsImages } from '../../assets/alerts/alertsImages';
 import { Icon } from 'react-native-elements'
+import { About, Care, Climate } from './plantDetails';
 
 const PlantParameter = ({lightColor, darkColor, icon, level}) => {
     return(
@@ -13,14 +14,6 @@ const PlantParameter = ({lightColor, darkColor, icon, level}) => {
                 <Text style={styles.level}>{level}</Text>
             </TouchableOpacity>
         </View>
-    );
-}
-
-const Category = ({name}) => {
-    return(
-        <TouchableOpacity style={styles.category}>
-            <Text style={styles.categoryText}>{name}</Text>
-        </TouchableOpacity>
     );
 }
 
@@ -39,24 +32,38 @@ const DATA = [
     },
     {
         id: 3,
-        category: 'Kup / Sprzedaj'
-    },
-    {
-        id: 4,
         category: 'Akcje Ratunkowe'
     }
 ];
 
-const Plant = ({plantId, onClose}) => {
+const SwitchCategory = ({onTouchCategory, id}) => {
+    switch (id) {
+        case 0:
+            return (<About onTouchCategory={onTouchCategory}/>);
+        case 1:
+            return (<Care onTouchCategory={onTouchCategory}/>);
+        case 2:
+            return (<Climate onTouchCategory={onTouchCategory}/>);
+    }
+}
+
+const Plant = ({plantId, onClose, onChat}) => {
     const [plantName, setPlantName] = useState(plantId === '' ? '' : plantId);
     const [visible, setVisible] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(null);
+    const [categoryVisible, setCategoryVisible] = useState(false);
+    const [categorySelected, setCategorySelected] = useState(undefined);
 
     const renderItem = ({ item }) => (
-        <TouchableWithoutFeedback onPress={() => {}}>
-            <Category name={item.category} />
-        </TouchableWithoutFeedback>
+        <TouchableOpacity activeOpacity={1} style={styles.category} onPress={() => onTouchCategory(item.id)}>
+            <Text style={styles.categoryText}>{item.category}</Text>
+        </TouchableOpacity>
     );
+
+    const onTouchCategory = (id) => {
+        setCategorySelected(id);
+        setCategoryVisible(!categoryVisible);
+    }
 
     const onItemSelect = (index) => {
         setSelectedIndex(index);
@@ -73,17 +80,18 @@ const Plant = ({plantId, onClose}) => {
         <Layout style={styles.layout}>
             <View style={styles.container}>
                 <View style={styles.imageContainer}>
-                    <TouchableOpacity 
-                        style={{position: 'absolute', right: 10, width: 30, height: 30}}
+                    <Image style={{ flex: 1 }} source={{ uri: 'https://drive.google.com/uc?id=1X1TQ74-F0orY6gHRiEB-9Ow_c-i2aqmX'}}/>
+                    <TouchableOpacity
+                        style={{ position: 'absolute', right: 10, width: 30, height: 30 }}
                         onPress={() => onClose(undefined)}
                     >
                         <Icon type='material' name='close' size={30} color={colors.grayDark} />
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={{ position: 'absolute', bottom: 5, right: 10, width: 30, height: 30 }}
-                        onPress={() => onClose(undefined)}
+                        onPress={() => onChat()}
                     >
-                        <Icon type='material' name='camera' size={30} color={colors.grayDark} />
+                        <Icon type='material' name='photo' size={30} color={colors.grayDark} />
                     </TouchableOpacity>
                 </View>
                 <View style={styles.details}>
@@ -112,12 +120,19 @@ const Plant = ({plantId, onClose}) => {
                         <PlantParameter lightColor={colors.lightLight} darkColor={colors.lightDark} icon={'light'} level={10}/>
                         <PlantParameter lightColor={colors.compostLight} darkColor={colors.compostDark} icon={'compost'} level={8}/>
                     </View>
-                    <FlatList
-                        data={DATA}
-                        renderItem={renderItem}
-                        keyExtractor={item => item.id}
-                        showsVerticalScrollIndicator={false}
-                    />
+                    {categoryVisible ? <SwitchCategory onTouchCategory={onTouchCategory} id={categorySelected}/> :
+                        <>
+                            <FlatList
+                                data={DATA}
+                                renderItem={renderItem}
+                                keyExtractor={item => item.id}
+                                showsVerticalScrollIndicator={false}
+                            />
+                            <TouchableOpacity style={styles.specialAction}>
+                                <Text style={styles.specialActionText}>Sprzedaj tą roślinę</Text>
+                            </TouchableOpacity>
+                        </>
+                    }
                 </View>
             </View>
         </Layout>
@@ -140,17 +155,20 @@ const styles = StyleSheet.create({
     imageContainer: {
         width: '100%', 
         aspectRatio: 16 / 9, 
-        backgroundColor: colors.grayBackgroundLight,
     },
     details: {
         alignSelf: 'stretch',
         flex: 1,
         marginTop: spacing.xs,
-        borderTopWidth: 2,
+        borderTopWidth: 1,
         borderTopColor: colors.grayDark,
         backgroundColor: colors.grayBackgroundDark,
         paddingHorizontal: spacing.md,
         paddingTop: spacing.lg,
+        marginHorizontal: spacing.xs,
+        marginBottom: spacing.xs,
+        borderBottomLeftRadius: rounding.sm,
+        borderBottomRightRadius: rounding.sm,
     },
     plantNameInput: {
         position: 'absolute',
@@ -162,7 +180,7 @@ const styles = StyleSheet.create({
         borderWidth: 3,
         borderColor: colors.grayMedium,
         borderRadius: rounding.xs,
-        elevation: 5,
+        elevation: 2,
     },
     plantParameter: {
         height: 30,
@@ -184,9 +202,9 @@ const styles = StyleSheet.create({
     },
     category: {
         height: 40,
-        backgroundColor: colors.grayBackgroundDark,
-        elevation: 4,
-        borderRadius: rounding.xs,
+        backgroundColor: colors.greenMedium,
+        elevation: 1,
+        borderRadius: rounding.sm,
         paddingHorizontal: spacing.sm,
         paddingVertical: spacing.xs,
         marginVertical: 7,
@@ -195,7 +213,22 @@ const styles = StyleSheet.create({
     },
     categoryText: {
         ...labels.qsp,
-        color: colors.greenDark,
+        color: colors.white,
+        alignSelf: 'center'
+    },
+    specialAction: {
+        backgroundColor: colors.grayBackgroundLight,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderRadius: rounding.lg,
+        borderWidth: 2,
+        borderColor: colors.grayDark,
+        marginVertical: spacing.sm,
+        elevation: 3,
+    },
+    specialActionText: {
+        ...labels.qsp,
+        color: colors.grayDark,
     },
 });
 

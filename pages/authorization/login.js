@@ -86,15 +86,17 @@ const Login = ({navigation}) => {
 
     return(
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-            <Layout style={{flex: 1, justifyContent: 'center', backgroundColor: '#25523B',}}>
-                <Image 
-                    source={require('../../assets/background1.jpg')} 
-                    style={{
-                        position: 'absolute', 
-                        resizeMode: 'cover',
-                    }}
-                />
-                <View style={{position: 'absolute', backgroundColor: '#18241b', width: '100%', height: '100%', opacity: .2}}></View>
+            <>
+            <Image
+                source={require('../../assets/background1.png')}
+                style={{
+                    position: 'absolute',
+                    width: '100%',
+                    height: '100%',
+                }}
+            />
+            <Layout style={{flex: 1, justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0)',}}>
+                {/* <View style={{position: 'absolute', backgroundColor: '#18241b', width: '100%', height: '100%', opacity: .2}}></View> */}
                 <TouchableOpacity style={{position: 'absolute', right: 20, top: 40}}  onPress={() => navigation.navigate('Registration')}>
                     <Icon fill='white' name={'arrow-forward'} style={{width: 35, height:35}}/>
                 </TouchableOpacity>
@@ -140,6 +142,7 @@ const Login = ({navigation}) => {
                     </TouchableOpacity> 
                 </View>
             </Layout>
+            </>
         </TouchableWithoutFeedback>
     )
 };
