@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Text, MenuItem, OverflowMenu, Input } from '@ui-kitten/components';
+import { Layout, Text, MenuItem, Input } from '@ui-kitten/components';
 import { BackHandler, StyleSheet, View, FlatList, TouchableOpacity, Image, Dimensions, TouchableWithoutFeedback } from 'react-native';
 import { labels, colors, spacing, rounding } from '../../style/base';
 import { alertsImages } from '../../assets/alerts/alertsImages';
 import { Icon } from 'react-native-elements'
 import { About, Care, Climate } from './plantDetails';
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import * as API from '../../api/apiMethods';
 
-const PlantParameter = ({lightColor, darkColor, icon, level}) => {
+const PlantParameter = ({lightColor, darkColor, icon, index}) => {
     return(
         <View style={[styles.plantParameter, {borderColor: darkColor, backgroundColor: lightColor}]}>
             <TouchableOpacity style={{flexDirection: 'row'}}>
                 <Image style={styles.plantParameterImage} source={alertsImages(icon)} />
-                <Text style={styles.level}>{level}</Text>
+                <Text style={styles.level}>{index}</Text>
             </TouchableOpacity>
         </View>
     );
@@ -30,29 +32,43 @@ const DATA = [
         id: 2,
         category: 'Klimat'
     },
-    {
-        id: 3,
-        category: 'Akcje Ratunkowe'
-    }
+    // {
+    //     id: 3,
+    //     category: 'Akcje Ratunkowe'
+    // }
 ];
 
-const SwitchCategory = ({onTouchCategory, id}) => {
+const SwitchCategory = ({ onTouchCategory, id, data, status, plantId, fullAccess}) => {
     switch (id) {
         case 0:
-            return (<About onTouchCategory={onTouchCategory}/>);
+            return (<About status={status} data={data} onTouchCategory={onTouchCategory} plantId={plantId}/>);
         case 1:
-            return (<Care onTouchCategory={onTouchCategory}/>);
+            return (<Care status={status} careData={data.care} onTouchCategory={onTouchCategory} plantId={plantId}/>);
         case 2:
-            return (<Climate onTouchCategory={onTouchCategory}/>);
+            return (<Climate status={status} climateData={data.climate} onTouchCategory={onTouchCategory} plantId={plantId}/>);
     }
 }
 
-const Plant = ({plantId, onClose, onChat}) => {
-    const [plantName, setPlantName] = useState(plantId === '' ? '' : plantId);
-    const [visible, setVisible] = useState(false);
-    const [selectedIndex, setSelectedIndex] = useState(null);
+const Plant = ({plantId, onClose, onChat, status}) => {
+    const [fullAccess, setFullAccess] = useState(false);
+    const [plantName, setPlantName] = useState('');
+    const [imageUrl, setImageUrl] = useState('');
+    const [indexes, setIndexes] = useState([]);
+
     const [categoryVisible, setCategoryVisible] = useState(false);
     const [categorySelected, setCategorySelected] = useState(undefined);
+
+    const [responseData, setResponseData] = useState([])
+
+    useEffect(() => {
+        getPlant();
+    }, []);
+
+    useEffect(() => {
+        setPlantName(responseData.name);
+        setImageUrl('https://drive.google.com/uc?id=' + responseData.image)
+        setIndexes([responseData.water_index, responseData.light_index, responseData.compost_index]);
+    }, [responseData]);
 
     const renderItem = ({ item }) => (
         <TouchableOpacity activeOpacity={1} style={styles.category} onPress={() => onTouchCategory(item.id)}>
@@ -65,22 +81,45 @@ const Plant = ({plantId, onClose, onChat}) => {
         setCategoryVisible(!categoryVisible);
     }
 
-    const onItemSelect = (index) => {
-        setSelectedIndex(index);
-        setVisible(false);
+    async function getPlant() {
+        try {
+            let response;
+            if (status === 'own' || status === 'ad') {
+                response = await API.getUserPlant(plantId, {
+                    headers: {
+                        'auth-token': await AsyncStorage.getItem('auth-token'),
+                        'user_id': await AsyncStorage.getItem('user_id')
+                    }
+                });
+            } else if (status === 'wiki') {
+                response = await API.getPlant(plantId, {
+                    headers: {
+                        'auth-token': await AsyncStorage.getItem('auth-token')
+                    }
+                });
+            }
+            if (response.status === 200) {
+                if (response.headers['full_access']) {
+                    setFullAccess(response.headers['full_access']);
+                }
+                if (response.data === []) {
+                    setResponseData([]);
+                } else {
+                    setResponseData(response.data);
+                }
+            }
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
     };
-
-    const renderToggleButton = () => (
-        <TouchableOpacity style={{right: -10}} onPress={() => setVisible(true)}>
-            <Icon type='material' name='more-vert' size={30} color={colors.grayDark} />
-        </TouchableOpacity>
-    );
 
     return (
         <Layout style={styles.layout}>
             <View style={styles.container}>
                 <View style={styles.imageContainer}>
-                    <Image style={{ flex: 1 }} source={{ uri: 'https://drive.google.com/uc?id=1X1TQ74-F0orY6gHRiEB-9Ow_c-i2aqmX'}}/>
+                    <Image style={{ flex: 1 }} source={{ uri: imageUrl}}/>
                     <TouchableOpacity
                         style={{ position: 'absolute', right: 10, width: 30, height: 30 }}
                         onPress={() => onClose(undefined)}
@@ -104,23 +143,14 @@ const Plant = ({plantId, onClose, onChat}) => {
                         autoCorrect={false}
                     />
                     <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
-                        <Text style={{ ...labels.qsp, color: colors.grayDark }}>Monstera deliciosa</Text>
-                        <OverflowMenu
-                            anchor={renderToggleButton}
-                            visible={visible}
-                            selectedIndex={selectedIndex}
-                            onSelect={onItemSelect}
-                            onBackdropPress={() => setVisible(false)}>
-                            <MenuItem title='Przypisz do' />
-                            <MenuItem title='Usuń' />
-                        </OverflowMenu>
+                        <Text style={{ ...labels.qsp, color: colors.grayDark }}>{responseData.species_name}</Text>
                     </View>
                     <View style={{flexDirection: 'row', marginVertical: spacing.md}}>
-                        <PlantParameter lightColor={colors.waterLight} darkColor={colors.waterDark} icon={'water'} level={6}/>
-                        <PlantParameter lightColor={colors.lightLight} darkColor={colors.lightDark} icon={'light'} level={10}/>
-                        <PlantParameter lightColor={colors.compostLight} darkColor={colors.compostDark} icon={'compost'} level={8}/>
+                        <PlantParameter index={indexes[0]} lightColor={colors.waterLight} darkColor={colors.waterDark} icon={'water'}/>
+                        <PlantParameter index={indexes[1]} lightColor={colors.lightLight} darkColor={colors.lightDark} icon={'light'}/>
+                        <PlantParameter index={indexes[2]} lightColor={colors.compostLight} darkColor={colors.compostDark} icon={'compost'}/>
                     </View>
-                    {categoryVisible ? <SwitchCategory onTouchCategory={onTouchCategory} id={categorySelected}/> :
+                    {categoryVisible ? <SwitchCategory onTouchCategory={onTouchCategory} id={categorySelected} data={responseData} status={status} fullAccess={fullAccess} plantId={plantId}/> :
                         <>
                             <FlatList
                                 data={DATA}
@@ -128,9 +158,38 @@ const Plant = ({plantId, onClose, onChat}) => {
                                 keyExtractor={item => item.id}
                                 showsVerticalScrollIndicator={false}
                             />
-                            <TouchableOpacity style={styles.specialAction}>
-                                <Text style={styles.specialActionText}>Sprzedaj tą roślinę</Text>
-                            </TouchableOpacity>
+                            <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+                                {status === 'own' || fullAccess === true ? 
+                                    <TouchableOpacity style={styles.specialAction}>
+                                        <Icon type='material' name='delete' size={28} color={colors.grayDark} />
+                                        <Text style={styles.specialActionText}>Usuń</Text>
+                                    </TouchableOpacity>
+                                : <></>}
+                                {status === 'own' ?
+                                    <TouchableOpacity style={styles.specialAction}>
+                                        <Icon type='material' name='storefront' size={28} color={colors.grayDark} />
+                                        <Text style={[styles.specialActionText, { marginLeft: spacing.xs }]}>Sprzedaj</Text>
+                                    </TouchableOpacity>
+                                : <></>}
+                                {status === 'ad' && fullAccess === true ?
+                                    <TouchableOpacity style={styles.specialAction}>
+                                        <Icon type='material' name='close' size={28} color={colors.grayDark} />
+                                        <Text style={[styles.specialActionText, { marginLeft: spacing.xs }]}>Usuń ogłoszenie</Text>
+                                    </TouchableOpacity>
+                                : <></>}
+                                {status === 'ad' && fullAccess === false ?
+                                    <TouchableOpacity style={styles.specialAction}>
+                                        <Icon type='material' name='send' size={28} color={colors.grayDark} />
+                                        <Text style={[styles.specialActionText, { marginLeft: spacing.xs }]}>Wiadomość</Text>
+                                    </TouchableOpacity>
+                                : <></>}
+                                {status === 'wiki' ?
+                                    <TouchableOpacity style={styles.specialAction}>
+                                        <Icon type='material' name='add-circle-outline' size={28} color={colors.greenMedium} />
+                                        <Text style={[styles.specialActionText, { marginLeft: spacing.xs }]}>Dodaj</Text>
+                                    </TouchableOpacity>
+                                : <></>}
+                            </View>
                         </>
                     }
                 </View>
@@ -150,7 +209,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         paddingTop: spacing.xs,
-        backgroundColor: colors.appLightBackground,
+        backgroundColor: colors.greenMedium,
     },
     imageContainer: {
         width: '100%', 
@@ -160,8 +219,8 @@ const styles = StyleSheet.create({
         alignSelf: 'stretch',
         flex: 1,
         marginTop: spacing.xs,
-        borderTopWidth: 1,
-        borderTopColor: colors.grayDark,
+        // borderTopWidth: 1,
+        // borderTopColor: colors.grayDark,
         backgroundColor: colors.grayBackgroundDark,
         paddingHorizontal: spacing.md,
         paddingTop: spacing.lg,
@@ -203,7 +262,6 @@ const styles = StyleSheet.create({
     category: {
         height: 40,
         backgroundColor: colors.greenMedium,
-        elevation: 1,
         borderRadius: rounding.sm,
         paddingHorizontal: spacing.sm,
         paddingVertical: spacing.xs,
@@ -219,16 +277,20 @@ const styles = StyleSheet.create({
     specialAction: {
         backgroundColor: colors.grayBackgroundLight,
         paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
+        paddingVertical: spacing.xs,
         borderRadius: rounding.lg,
-        borderWidth: 2,
-        borderColor: colors.grayDark,
+        // borderWidth: 1,
+        // borderColor: colors.grayDark,
         marginVertical: spacing.sm,
         elevation: 3,
+        flexDirection: 'row',
     },
     specialActionText: {
         ...labels.qsp,
         color: colors.grayDark,
+        marginRight: spacing.xs,
+        alignSelf: 'center',
+        fontWeight: 'bold'
     },
 });
 

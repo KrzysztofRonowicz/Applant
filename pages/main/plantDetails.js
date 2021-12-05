@@ -4,72 +4,11 @@ import { BackHandler, StyleSheet, View, FlatList, TouchableOpacity, Image, Dimen
 import { labels, colors, spacing, rounding } from '../../style/base';
 import { alertsImages, alertsImagesDarkColors, alertsImagesLightColors } from '../../assets/alerts/alertsImages';
 import { Slider } from '@miblanchard/react-native-slider';
-import { Icon } from 'react-native-elements'
+import { Icon } from 'react-native-elements';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as API from '../../api/apiMethods';
 
-const DATA = [
-    {
-        id: 0,
-        name: 'shower',
-        description: 'Prysznic',
-        value: 7,
-    },
-    {
-        id: 1,
-        name: 'water',
-        description: 'Podlewanie',
-        value: 4,
-    },
-    {
-        id: 2,
-        name: 'bath',
-        description: 'Kąpiel',
-        value: 5,
-    },
-    {
-        id: 3,
-        name: 'fertilization',
-        description: 'Nawożenie',
-        value: 11,
-    },
-    {
-        id: 4,
-        name: 'rotation',
-        description: 'Obracanie',
-        value: 15,
-    },
-    {
-        id: 5,
-        name: 'compost',
-        description: 'Wymiana podłoża',
-        value: 14,
-    }
-];
-
-const DATA_CLIMATE = [
-    {
-        id: 0,
-        name: 'light',
-        description: 'Słońce',
-        value: 7,
-        unit: '%',
-    },
-    {
-        id: 1,
-        name: 'humidity',
-        description: 'Wilgotność',
-        value: 4,
-        unit: '%',
-    },
-    {
-        id: 2,
-        name: 'temperature',
-        description: 'Temperatura',
-        value: 5,
-        unit: '°C',
-    }
-];
-
-export const About = ({ onTouchCategory }) => {
+export const About = ({ onTouchCategory, plantId, data, status }) => {
     return(
         <View style={styles.container}>
             <TouchableOpacity activeOpacity={1} style={styles.header} onPress={() => onTouchCategory(undefined)}>
@@ -77,18 +16,8 @@ export const About = ({ onTouchCategory }) => {
             </TouchableOpacity>
             <View style={styles.content}>
                 <ScrollView>
-                   <Text style={styles.aboutText}><Text style={styles.aboutTitle}>Monstera dziurawa</Text> 
-                        (Monstera deliciosa) – gatunek rośliny występujący 
-                        w lasach tropikalnych od południowego Meksyku 
-                        po południową Panamę. 
-                        W Polsce jest uprawiany jako roślina ozdobna.{'\n\n'}
-                        Gatunek ten należy do największych roślin do dekoracji wnętrz. 
-                        Rozmnaża się generatywnie. Roślina łatwa w uprawie. 
-                        Dobrze znosi warunki w mieszkaniach. 
-                        Wymaga miejsca jasnego do półcienistego, jednak nie bezpośrednio nasłonecznionego. 
-                        Optymalna temperatura do rozwoju to 18-22 stopni. 
-                        Monstera dziurawa lubi umiarkowaną wilgotność podłoża, należy ją podlewać raz w tygodniu. 
-                        Nawożenie zalecane jest co 2 tygodnie od marca do sierpnia
+                   <Text style={styles.aboutText}><Text style={styles.aboutTitle}>{data.species_name}</Text> 
+                        {data.description}
                     </Text> 
                 </ScrollView>
             </View>
@@ -96,17 +25,32 @@ export const About = ({ onTouchCategory }) => {
     );
 }
 
-const CarePlantParameter = ({ id, name, value, description, onModal, unit}) => (
+const CarePlantParameter = ({ data, onModal}) => (
     <View style={{flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.grayLight}}>
         <TouchableOpacity 
-            style={[styles.plantParameterImage, {backgroundColor: alertsImagesDarkColors(name)}]}
-            onPress={() => onModal(description, unit)}
+            style={[styles.plantParameterImage, {backgroundColor: alertsImagesDarkColors(data.name)}]}
+            onPress={() => onModal(data)}
         >
-            <Image source={alertsImages(name)} style={{alignSelf: 'center', width: 30, height: 30}}/>
+            <Image source={alertsImages(data.name)} style={{alignSelf: 'center', width: 30, height: 30}}/>
         </TouchableOpacity>
         <View style={styles.plantParameterIndicator}>
-            <Text style={{...labels.qsp, marginVertical: spacing.xs}}>{description}</Text>
-            <IndicatorValue value={value} dark={alertsImagesDarkColors(name)} light={alertsImagesLightColors(name)}/>
+            <Text style={{ ...labels.qsp, marginVertical: spacing.xs }}>{data.description}</Text>
+            <IndicatorValue value={data.value} dark={alertsImagesDarkColors(data.name)} light={alertsImagesLightColors(data.name)}/>
+        </View>
+    </View>
+);
+
+const ClimatePlantParameter = ({ data, onModal }) => (
+    <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.grayLight }}>
+        <TouchableOpacity
+            style={[styles.plantParameterImage, { backgroundColor: alertsImagesDarkColors(data.name) }]}
+            onPress={() => onModal(data)}
+        >
+            <Image source={alertsImages(data.name)} style={{ alignSelf: 'center', width: 30, height: 30 }} />
+        </TouchableOpacity>
+        <View style={styles.plantParameterIndicator}>
+            <Text style={{ ...labels.qsp, marginVertical: spacing.xs }}>{data.description}</Text>
+            <IndicatorValue value={data.value_global} dark={alertsImagesDarkColors(data.name)} light={alertsImagesLightColors(data.name)} />
         </View>
     </View>
 );
@@ -117,15 +61,15 @@ const IndicatorValue = ({value, dark, light}) => {
         tmpArr.push(index);
     }
     return (
-        <View style={[styles.plantParameterIndicatorWrapper,{ backgroundColor: light}]}>
+        <View style={[styles.plantParameterIndicatorWrapper, { backgroundColor: colors.appLightBackground}]}>
             {tmpArr.map((index) => (
                 <View key={index} 
                     style={[{ 
-                        borderRadius: rounding.xs, 
+                        borderRadius: 2,
                         flex:1, 
                         height: 15, 
                         marginHorizontal: 2,  
-                    }, index <= value ? { backgroundColor: dark } : { backgroundColor: light}]}
+                    }, index <= value ? { backgroundColor: dark } : { borderColor: colors.appLightBackground}]}
                 >
                 </View>
             ))}
@@ -133,46 +77,122 @@ const IndicatorValue = ({value, dark, light}) => {
     );
 };
 
-export const Care = ({ onTouchCategory }) => {
+export const Care = ({ onTouchCategory, plantId, careData, status }) => {
+    const [saveDisabled, setSaveDisabled] = useState(true);
     const [date, setDate] = useState(null);
     const [calendarVisible, setCalendarVisible] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
-    const [sliderValue, setSliderValue] = useState(1);
-    const [selectedParameter, setSelectedParameter] = useState(undefined);
-    const [datepicker, setDatepicker] = React.useState(new Date());
+    const [selectedParameter, setSelectedParameter] = useState(careData[0]);
+
+    const [slider, setSlider] = useState([]);
+    const [datepicker, setDatepicker] = useState(new Date(Date.now() + (3600 * 1000 * 24)));
+
+    const [requestData, setRequestData] = useState(careData);
+    const [responseData, setResponseData] = useState(careData);
 
     const renderItem = ({ item }) => (
-        <CarePlantParameter onModal={onModal} id={item.id} name={item.name} value={item.value} description={item.description}/>
+        <CarePlantParameter onModal={onModal} data={item}/>
     );
 
     const onModal = (parameter) => {
         setSelectedParameter(parameter);
         setModalVisible(!modalVisible);
+        setSlider([parameter.frequency]);
+        if (status !== 'wiki') setDatepicker(new Date(parameter.next_date));
     }
+
+    const createUpdateRequest = (data) => {
+        setSaveDisabled(false);
+        let tmpRequestData = requestData;
+        let foundIndex = tmpRequestData.findIndex(parameter => parameter._id === selectedParameter._id);
+        tmpRequestData[foundIndex].frequency = slider[0];
+        if (data) tmpRequestData[foundIndex].next_date = data;
+        tmpRequestData[foundIndex].modified = true;
+        setRequestData(tmpRequestData);
+    }
+
+    async function updatePlant() {
+        try {
+            let foundIndex = requestData.findIndex(parameter => parameter._id === selectedParameter._id);
+            let request = requestData[foundIndex];
+            if (status === 'own' || status === 'ad') {
+                response = await API.updateUserPlantCareParameter(plantId, requestData[foundIndex].name ,
+                    request,
+                    {
+                        headers: {
+                            'auth-token': await AsyncStorage.getItem('auth-token'),
+                            'user_id': await AsyncStorage.getItem('user_id') 
+                        }
+                    }
+                );
+            }
+            getPlant();
+            setModalVisible(false);
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
+    }
+
+    async function getPlant() {
+        try {
+            let response;
+            if (status === 'own') {
+                response = await API.getUserPlant(plantId, {
+                    headers: {
+                        'auth-token': await AsyncStorage.getItem('auth-token'),
+                        'user_id': await AsyncStorage.getItem('user_id')
+                    }
+                });
+            } else if (status === 'wiki') {
+                response = await API.getPlant(plantId, {
+                    headers: {
+                        'auth-token': await AsyncStorage.getItem('auth-token'),
+                    }
+                });
+            }
+            if (response.status === 200) {
+                if (!response.data === []) {
+                    setResponseData(response.data.care);
+                }
+            }
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
+    };
 
     return (
         <View style={styles.container}>
-            <Modal backdropStyle={styles.backdrop} onBackdropPress={() => setModalVisible(false)} visible={modalVisible}>
+            <Modal backdropStyle={styles.backdrop} onBackdropPress={() => {setSaveDisabled(false); setModalVisible(false)}} visible={modalVisible}>
                 <View style={styles.modal}>
-                    <Text style={styles.modalText}>{selectedParameter} co: <Text style={styles.modalAltText}>{sliderValue}</Text> dni</Text>
+                    <Text style={styles.modalText}>
+                            {selectedParameter.description} co: <Text style={styles.modalAltText}>{slider} </Text> 
+                            {selectedParameter.frequency_unit}
+                    </Text>
                     <Slider
-                        value={sliderValue}
-                        onValueChange={value => setSliderValue(value)}
+                        containerStyle={{marginVertical: spacing.xs}}
+                        value={slider}
+                        onValueChange={value => {setSlider(value); createUpdateRequest()}}
                         minimumValue={1}
                         maximumValue={30}
                         step={1}
+                        disabled={status === 'wiki'}
                     />
                     <Text style={styles.modalText}>Następny raz: </Text>
                     <Datepicker
                         style={styles.datepicker}
                         date={datepicker}
-                        onSelect={nextDate => setDatepicker(nextDate)}
+                        onSelect={nextDate => { setDatepicker(nextDate); createUpdateRequest(nextDate)}}
+                        disabled={status === 'wiki'}
                     />
                     <View style={{flex: 1, flexDirection: 'row', marginTop: spacing.sm}}>
-                        <Button onPress={() => setModalVisible(false)} style={{flex:1, marginRight: spacing.xs}} disabled={true}>
+                        <Button onPress={() => setModalVisible(false)} style={{ flex: 1, marginRight: spacing.xs }} disabled={!selectedParameter.modified || status === 'wiki'}>
                             PRZYWRÓĆ
                         </Button>
-                        <Button onPress={() => setModalVisible(false)} style={{ flex: 1, marginLeft: spacing.xs }}>
+                        <Button onPress={() => updatePlant()} style={{ flex: 1, marginLeft: spacing.xs }} disabled={saveDisabled || status === 'wiki'}>
                             ZAPISZ
                         </Button>
                     </View>
@@ -200,9 +220,9 @@ export const Care = ({ onTouchCategory }) => {
                         />
                     </ScrollView> :
                     <FlatList
-                        data={DATA}
+                        data={responseData}
                         renderItem={renderItem}
-                        keyExtractor={item => item.id}
+                        keyExtractor={item => item._id}
                         showsVerticalScrollIndicator={false}
                     />
                 }
@@ -211,21 +231,92 @@ export const Care = ({ onTouchCategory }) => {
     );
 }
 
-export const Climate = ({ onTouchCategory }) => {
+export const Climate = ({ onTouchCategory, plantId, climateData, status }) => {
+    const [saveDisabled, setSaveDisabled] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
     const [sliderValue, setSliderValue] = useState([40,60]);
-    const [selectedParameter, setSelectedParameter] = useState(undefined);
+    const [selectedParameter, setSelectedParameter] = useState(climateData[0]);
     const [selectedUnit, setSelectedUnit] = useState(undefined);
-    const [actualValue, setActualValue] = useState(40);
+    const [actualValue, setActualValue] = useState(undefined);
+
+    const [requestData, setRequestData] = useState(climateData);
+    const [responseData, setResponseData] = useState(climateData);
 
     const renderItem = ({ item }) => (
-        <CarePlantParameter onModal={onModal} id={item.id} name={item.name} value={item.value} description={item.description} unit={item.unit}/>
+        <ClimatePlantParameter onModal={onModal} data={item}/>
     );
 
-    const onModal = (parameter, unit) => {
-        setSelectedUnit(unit);
+    const onModal = (parameter) => {
+        console.log(parameter);
+        setSelectedUnit(parameter.unit);
         setSelectedParameter(parameter);
+        setActualValue(parameter.actual_value);
+        setSliderValue([parameter.value[0].min,parameter.value[0].max])
         setModalVisible(!modalVisible);
+    }
+
+    const createUpdateRequest = () => {
+        setSaveDisabled(false);
+        let tmpRequestData = requestData;
+        let foundIndex = tmpRequestData.findIndex(parameter => parameter._id === selectedParameter._id);
+        tmpRequestData[foundIndex].value[0].min = sliderValue[0];
+        tmpRequestData[foundIndex].value[0].max = sliderValue[1];
+        tmpRequestData[foundIndex].actual_value = actualValue;
+        tmpRequestData[foundIndex].modified = true;
+        setRequestData(tmpRequestData);
+    }
+
+    async function getPlant() {
+        try {
+            let response;
+            if (status === 'own') {
+                response = await API.getUserPlant(plantId, {
+                    headers: {
+                        'auth-token': await AsyncStorage.getItem('auth-token'),
+                        'user_id': await AsyncStorage.getItem('user_id')
+                    }
+                });
+            } else if (status === 'wiki') {
+                response = await API.getPlant(plantId, {
+                    headers: {
+                        'auth-token': await AsyncStorage.getItem('auth-token'),
+                    }
+                });
+            }
+            if (response.status === 200) {
+                if (!response.data === []) {
+                    setResponseData(response.data.climate);
+                }
+            }
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
+    };
+
+    async function updatePlant() {
+        try {
+            let foundIndex = requestData.findIndex(parameter => parameter._id === selectedParameter._id);
+            let request = requestData[foundIndex];
+            if (status === 'own' || status === 'ad') {
+                response = await API.updateUserPlantClimateParameter(plantId, requestData[foundIndex].name,
+                    request,
+                    {
+                        headers: {
+                            'auth-token': await AsyncStorage.getItem('auth-token'),
+                            'user_id': await AsyncStorage.getItem('user_id')
+                        }
+                    }
+                );
+            }
+            getPlant();
+            setModalVisible(false);
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
     }
 
     return (
@@ -233,30 +324,32 @@ export const Climate = ({ onTouchCategory }) => {
             <Modal backdropStyle={styles.backdrop} onBackdropPress={() => setModalVisible(false)} visible={modalVisible}>
                 <View style={styles.modal}>
                     <Text style={styles.modalText}>
-                        {selectedParameter}: od
-                        <Text style={styles.modalAltText}> {sliderValue[0]}{selectedUnit} </Text>do 
-                        <Text style={styles.modalAltText}> {sliderValue[1]}{selectedUnit} </Text>
+                        {selectedParameter.description}: od
+                        <Text style={styles.modalAltText}> {sliderValue[0]}{selectedParameter.unit} </Text>do 
+                        <Text style={styles.modalAltText}> {sliderValue[1]}{selectedParameter.unit} </Text>
                     </Text>
                     <Slider
                         value={sliderValue}
-                        onValueChange={value => setSliderValue(value)}
+                        onValueChange={value => { setSliderValue(value); createUpdateRequest()}}
                         minimumValue={0}
                         maximumValue={100}
                         step={1}
+                        disabled={status === 'wiki'}
                     />
                     <Text style={styles.modalText}>Aktualnie: <Text style={styles.modalAltText}>{actualValue}{selectedUnit} </Text></Text>
                     <Slider
                         value={actualValue}
-                        onValueChange={value => setActualValue(value)}
+                        onValueChange={value => { setActualValue(value); createUpdateRequest()}}
                         minimumValue={0}
                         maximumValue={100}
                         step={1}
+                        disabled={status === 'wiki'}
                     />
                     <View style={{ flex: 1, flexDirection: 'row', marginTop: spacing.sm }}>
-                        <Button onPress={() => setModalVisible(false)} style={{ flex: 1, marginRight: spacing.xs }} disabled={true}>
+                        <Button onPress={() => setModalVisible(false)} style={{ flex: 1, marginRight: spacing.xs }} disabled={!selectedParameter.modified || status === 'wiki'}>
                             PRZYWRÓĆ
                         </Button>
-                        <Button onPress={() => setModalVisible(false)} style={{ flex: 1, marginLeft: spacing.xs }}>
+                        <Button onPress={() => updatePlant()} style={{ flex: 1, marginLeft: spacing.xs }} disabled={saveDisabled || status === 'wiki'}>
                             ZAPISZ
                         </Button>
                     </View>
@@ -267,7 +360,7 @@ export const Climate = ({ onTouchCategory }) => {
             </TouchableOpacity>
             <View style={styles.content}>
                 <FlatList
-                    data={DATA_CLIMATE}
+                    data={responseData}
                     renderItem={renderItem}
                     keyExtractor={item => item.id}
                     showsVerticalScrollIndicator={false}
@@ -338,7 +431,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row', 
         padding: spacing.xs,
         borderRadius: rounding.sm,
-        elevation: 1,
+        elevation: 2,
         // flex: 1,
     },
     backdrop: {

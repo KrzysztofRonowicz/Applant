@@ -72,8 +72,9 @@ const Login = ({navigation}) => {
             if (response.status === 200) {
                 setErrorPath(''),
                 AsyncStorage.setItem('auth-token', response.headers['auth-token']);
+                AsyncStorage.setItem('user_id', response.data['user_id']);
                 context.setLoginState(true);
-                // setLoginState(true);
+                console.log(response.data['user_id']);
 			}
         } catch (error) {
             if (error.response.status === 400) {

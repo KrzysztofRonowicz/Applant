@@ -5,103 +5,26 @@ import { labels, colors, spacing, rounding } from '../../style/base';
 import { alertsImages, alertsImagesDarkColors } from '../../assets/alerts/alertsImages';
 import { Icon } from 'react-native-elements'
 import Plant from './plant';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as API from '../../api/apiMethods';
 
-const DATA = [
-    {
-        collectionId: '1',
-        name: 'kuchnia | parapet',
-        plants: [
-            {
-                plantId: '1',
-                name: 'Fikus'
-            },
-            {
-                plantId: '2',
-                name: 'Fikus'
-            },
-            {
-                plantId: '3',
-                name: 'Fikus'
-            },
-            {
-                plantId: '4',
-                name: 'New'
-            },
-        ],
-    },
-    {
-        collectionId: '2',
-        name: 'sypialnia | parapet',
-        plants: [
-            {
-                plantId: '1',
-                name: 'Fikus'
-            },
-            {
-                plantId: '2',
-                name: 'New'
-            },
-        ],
-    },
-    {
-        collectionId: '3',
-        name: 'sypialnia | północny parapet',
-        plants: [
-            {
-                plantId: '1',
-                name: 'Fikus'
-            },
-            {
-                plantId: '2',
-                name: 'New'
-            },
-        ],
-    },
-    {
-        collectionId: '3',
-        name: 'sypialnia | północny parapet',
-        plants: [
-            {
-                plantId: '1',
-                name: 'Fikus'
-            },
-            {
-                plantId: '2',
-                name: 'New'
-            },
-        ],
-    },
-    {
-        collectionId: '3',
-        name: 'sypialnia | północny parapet',
-        plants: [
-            {
-                plantId: '1',
-                name: 'Fikus'
-            },
-            {
-                plantId: '2',
-                name: 'New'
-            },
-        ],
-    },
-];
+const getImageUrl = (id) => {
+    return 'https://drive.google.com/uc?id=' + id;
+};
 
-const CollectionPlant = ({name}) => (
-    name === 'New' ?
-    <TouchableOpacity style={styles.collectionNewPlant}>
-        <Icon type='material' name={'add-circle-outline'} size={40} color={colors.grayMedium} />
-    </TouchableOpacity> :
+const CollectionPlant = ({ plantData }) => (
+    // plant.name === 'New' ?
+    // <TouchableOpacity style={styles.collectionNewPlant}>
+    //     <Icon type='material' name={'add-circle-outline'} size={40} color={colors.grayMedium} />
+    // </TouchableOpacity> :
     <TouchableOpacity style={styles.collectionPlant} activeOpacity={.6}>
-        <View style={styles.collectionPlantImage}>
-            {/* plant image */}
-        </View>
-        <Text style={styles.collectionPlantName}>{name}</Text>
+        <Image source={{uri: getImageUrl(plantData.image)}} style={styles.collectionPlantImage}/>
+        <Text style={styles.collectionPlantName}>{plantData.name}</Text>
     </TouchableOpacity>
 );
 
 const renderCollectionItem = ({ item }) => (
-    <CollectionPlant name={item.name}/>
+    <CollectionPlant plantData={item} />
 );
 
 const Collection = ({ name, plants }) => (
@@ -110,7 +33,7 @@ const Collection = ({ name, plants }) => (
         <FlatList
             data={plants}
             renderItem={renderCollectionItem}
-            keyExtractor={item => item.plantId}
+            keyExtractor={item => item._id}
             showsHorizontalScrollIndicator={false}
             horizontal={true}
         />
@@ -129,6 +52,12 @@ const Collections = () => {
     const [addRoom, setAddRoom] = useState(false);
     const [moveOptionVisible, setMoveOptionVisible] = useState(true);
 
+    const [collections, setCollections] = useState([]);
+
+    useEffect(() => {
+        getCollections();
+    }, []);
+
     const onPlantSelect = (e) => {
         setSelectedPlant(e);
         setPlantVisible(!plantVisible);
@@ -146,6 +75,30 @@ const Collections = () => {
     const renderItem = ({ item }) => (
         <Collection name={item.name} plants={item.plants}/>
     );
+
+    async function getCollections() {
+        try {
+            const response = await API.getUserCollections({
+                headers: {
+                    'auth-token': await AsyncStorage.getItem('auth-token'),
+                    'user_id': await AsyncStorage.getItem('user_id')
+                }
+            });
+            
+            if (response.status === 200) {
+                if (response.data === []) {
+                    setResponseData([]);
+                } else {
+                    console.log(response.data)
+                    setCollections(response.data);
+                }
+            }
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
+    }
 
     return (
         <TouchableWithoutFeedback>
@@ -169,9 +122,9 @@ const Collections = () => {
                     <AddButton onPress={onAddRoom} name={'add-circle'} />
                 </View>
                 <FlatList
-                    data={DATA}
+                    data={collections}
                     renderItem={renderItem}
-                    keyExtractor={item => item.collectionId}
+                    keyExtractor={item => item._id}
                     showsVerticalScrollIndicator={false}
                 />
                 {moveOptionVisible === true ? 

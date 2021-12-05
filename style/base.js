@@ -30,6 +30,7 @@ export const colors = {
 	humidityLight: '#CAEEFF',
 	black: 'black',
 	white: 'white',
+	error: '#cc0000',
 };
 
 export const spacing = {

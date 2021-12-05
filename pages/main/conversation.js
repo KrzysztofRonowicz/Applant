@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
         alignContent: 'flex-start',
         paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.sm,
+        paddingHorizontal: 15,
         backgroundColor: colors.white,
         elevation: 2,
         maxWidth: '70%',

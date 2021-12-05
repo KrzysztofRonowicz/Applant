@@ -1,86 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Text, Input, MenuItem, OverflowMenu, CheckBox, Toggle, Radio } from '@ui-kitten/components';
 import { Icon } from 'react-native-elements'
+import Plant from './plant';
 import { BackHandler, StyleSheet, TouchableOpacity, View, FlatList, Dimensions, Image } from 'react-native';
 import { colors, labels, spacing, rounding } from '../../style/base';
 import { alertsImages } from '../../assets/alerts/alertsImages';
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import * as API from '../../api/apiMethods';
 
-const DATA = [
-    {
-        name: 'Monstera',
-        params: 
-        {
-            water: '6',
-            light: '10',
-            compost: '8',
-        }
-    },
-    {
-        name: 'Filodendron',
-        params:
-        {
-            water: '4',
-            light: '6',
-            compost: '8',
-        }
-    },
-    {
-        name: 'Aloes',
-        params:
-        {
-            water: '2',
-            light: '8',
-            compost: '5',
-        }
-    },
-    {
-        name: 'Filodendron',
-        params:
-        {
-            water: '4',
-            light: '6',
-            compost: '8',
-        }
-    },
-    {
-        name: 'Aloes',
-        params:
-        {
-            water: '2',
-            light: '8',
-            compost: '5',
-        }
-    },
-];
-
-const StoreDATA = [
-    {
-        name: 'Monstera',
-        prize: '60'
-    },
-    {
-        name: 'Filodendron',
-        prize: '40'
-    },
-    {
-        name: 'Aloes',
-        prize: '15'
-    },
-    {
-        name: 'Monstera',
-        prize: '60'
-    },
-    {
-        name: 'Filodendron',
-        prize: '40'
-    },
-    {
-        name: 'Aloes',
-        prize: '15'
-    },
-];
-
-const PlantParameters = ({ prize, params }) => {
+const PlantAdParameters = ({ prize, water_index, light_index, compost_index }) => {
     return (
         prize ? 
         <View style={styles.plantParameters}>
@@ -88,25 +16,23 @@ const PlantParameters = ({ prize, params }) => {
         </View> :
         <View style={styles.plantParameters}>
             <Image style={styles.plantParameterImage} source={alertsImages('water')} />
-            <Text style={styles.level}>{params.water}</Text>
+                <Text style={styles.level}>{water_index}</Text>
             <Image style={styles.plantParameterImage} source={alertsImages('light')} />
-            <Text style={styles.level}>{params.light}</Text>
+                <Text style={styles.level}>{light_index}</Text>
             <Image style={styles.plantParameterImage} source={alertsImages('compost')} />
-            <Text style={styles.level}>{params.compost}</Text>
+                <Text style={styles.level}>{compost_index}</Text>
         </View>
     );
 }
 
-const Plant = ({ name, params, prize }) => (
-    <TouchableOpacity style={styles.plantContainer} activeOpacity={.6}>
+const PlantAd = ({ _id, species_name, image, water_index, light_index, compost_index, prize, onPlantSelect }) => (
+    <TouchableOpacity style={styles.plantContainer} activeOpacity={.6} onPress={() => onPlantSelect(_id)}>
         <View style={styles.plantImageContainer}>
-            <View style={styles.plantImage}>
-
-            </View>
-            <PlantParameters name={name} params={params} prize={prize}/>
+            <Image style={styles.plantImage} source={{ uri: image}}/>
+            <PlantAdParameters water_index={water_index} light_index={light_index} compost_index={compost_index} prize={prize}/>
         </View>
         <View style={{flex: 1, justifyContent: 'center'}}>
-            <Text style={styles.name}>{name}</Text>
+            <Text style={styles.name}>{species_name}</Text>
         </View>
     </TouchableOpacity>
 );
@@ -118,6 +44,10 @@ const Search = () => {
     const [filters, setFilters] = useState(null);
     const [sort, setSort] = useState(null);
     const [marketVisible, setMarketVisible] = useState(false);
+    const [selectedPlant, setSelectedPlant] = useState(undefined);
+    const [plantVisible, setPlantVisible] = useState(false);
+
+    const [responseData, setResponseData] = useState([]);
 
     const onFilterSelect = (index) => {
         setFilters(index);
@@ -129,12 +59,29 @@ const Search = () => {
         setVisibleSort(false);
     };
 
+    const onPlantSelect = (id) => {
+        setSelectedPlant(id);
+        setPlantVisible(!plantVisible);
+    };
+
+    const getImageUrl = (id) => {
+        return 'https://drive.google.com/uc?id=' + id;
+    };
+
     const renderItem = ({ item }) => (
-        <Plant name={item.name} params={item.params} />
+        <PlantAd 
+            _id={item._id}
+            species_name={item.species_name} 
+            image={getImageUrl(item.image)} 
+            water_index={item.water_index} 
+            light_index={item.light_index} 
+            compost_index={item.compost_index}
+            onPlantSelect={onPlantSelect}
+        />
     );
 
     const renderMarketItem = ({ item }) => (
-        <Plant name={item.name} prize={item.prize} />
+        <PlantAd species_name={item.species_name} image={getImageUrl(item.image)} water_index={item.water_index} light_index={item.light_index} compost_index={item.compost_index}/>
     );
 
     const filterButon = () => (
@@ -149,7 +96,31 @@ const Search = () => {
         </TouchableOpacity>
     );
 
+    async function searchPlant(nextValue){
+        setInputValue(nextValue);
+        try {
+            let response = await API.searchPlants( nextValue ,{
+                headers: {
+                    'auth-token': await AsyncStorage.getItem('auth-token')
+                }
+            });
+            if (response.status === 200) {
+                if (response.data === []) {
+                    setResponseData([]);
+                } else {
+                    setResponseData(response.data);
+                }
+            }
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
+    };
+
     return(
+        plantVisible ?
+        <Plant plantId={selectedPlant} onClose={onPlantSelect} status={'wiki'}/> :
         <Layout style={styles.layout}>
             <Input
                 style={styles.input}
@@ -157,14 +128,16 @@ const Search = () => {
                 textStyle={{...labels.qsp}}
                 size='large'
                 placeholder='Szukaj rośliny'
-                onChangeText={nextValue => setInputValue(nextValue)}
+                onChangeText={nextValue => searchPlant(nextValue)}
             />
             <View style={styles.filterSortContainer}>
                 <View style={{ flexDirection: 'row' }}>
                     <Icon type='material' name='storefront' size={30} color={colors.greenDark} style={{marginRight: spacing.sm}}/>
                     <Radio
                         checked={marketVisible}
-                        onChange={nextChecked => setMarketVisible(nextChecked)}>
+                        onChange={nextChecked => {
+                            setMarketVisible(nextChecked);
+                        }}>
                     </Radio>
                 </View>
                 <View style={{flexDirection: 'row'}}>
@@ -197,11 +170,11 @@ const Search = () => {
                 </View> 
             </View>
             <FlatList
-                data={marketVisible ? StoreDATA : DATA}
-                renderItem={marketVisible ? renderMarketItem : renderItem}
+                data={responseData}
+                renderItem={renderItem}
                 numColumns={2}
                 columnWrapperStyle={{justifyContent: 'space-between'}}
-                keyExtractor={item => item.name}
+                keyExtractor={item => item._id}
                 showsVerticalScrollIndicator={false}
             />
         </Layout>
@@ -256,6 +229,8 @@ const styles = StyleSheet.create({
     },
     plantImage: {
         flex: 1,
+        borderTopLeftRadius: rounding.sm,
+        borderTopRightRadius: rounding.sm,
     },
     plantParameters: {
         height: 30,

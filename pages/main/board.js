@@ -10,24 +10,27 @@ const DATA = [
     {
         name: 'Monstera',
         alerts: ['water', 'bath', 'fertilization'],
+        plant_id: '61a115a21f60a745ac391127'
     },
     {
         name: 'Filodendron',
         alerts: ['water', 'shower'],
+        plant_id: '61a115a21f60a745ac391127'
     },
     {
         name: 'Aloes',
         alerts: ['temperature', 'shower'],
+        plant_id: '61a115a21f60a745ac391127'
     },
 ];
 
-const Ticket = ({name, alerts, onPlantSelect}) => (
+const Ticket = ({name, alerts, onPlantSelect, plant_id}) => (
     <View style={styles.ticketContainer}>
         <View style={styles.ticketImage}>
 
         </View>
         <View style={styles.ticketContent}>
-            <TouchableOpacity style={{ alignSelf: 'flex-start' }} onPress={() => onPlantSelect(name)}>
+            <TouchableOpacity style={{ alignSelf: 'flex-start' }} onPress={() => onPlantSelect(plant_id)}>
                 <Text style={styles.ticketName}>{name}</Text>
             </TouchableOpacity>
             <View style={styles.ticketButtons}>
@@ -65,7 +68,7 @@ const Board = ({navigation}) => {
     };
 
     const renderItem = ({ item }) => (
-        <Ticket onPlantSelect={onPlantSelect} name={item.name} alerts={item.alerts} />
+        <Ticket onPlantSelect={onPlantSelect} name={item.name} alerts={item.alerts} plant_id={item.plant_id}/>
     );
 
     const renderToggleButton = () => (
@@ -76,7 +79,7 @@ const Board = ({navigation}) => {
 
     return (
         plantVisible ? 
-        <Plant plantId={selectedPlant} onClose={onPlantSelect} onChat={onChat}/> :
+        <Plant plantId={selectedPlant} onClose={onPlantSelect} onChat={onChat} status={'own'} /> :
         <Layout style={styles.layout}>
             <View style={styles.header}>
                 <Text style={styles.title}>Terminarz</Text>
