@@ -12,7 +12,7 @@ export const plant = (_id) => `${plantUri}/?_id=${_id}`;
 export const searchPlants = (species_name) => `${plantUri}/search?species_name=${species_name}`;
 
 export const userPlant = (_id) => `${userPlantUri}/?_id=${_id}`;
-export const userPlantLabel = (_id) => `${userPlantUri}/label?_id=${_id}`
+export const addUserPlant = `${userPlantUri}/add`;
 export const updateUserPlant = (_id) => `${userPlantUri}/update?_id=${_id}`;
 export const updateUserPlantCareParameter = (_id, care_name) => `${userPlantUri}/update/careparameter?_id=${_id}&care_name=${care_name}`;
 export const updateUserPlantClimateParameter = (_id, climate_name) => `${userPlantUri}/update/climateparameter?_id=${_id}&climate_name=${climate_name}`;

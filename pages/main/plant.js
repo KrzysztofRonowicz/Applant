@@ -7,6 +7,8 @@ import { Icon } from 'react-native-elements'
 import { About, Care, Climate } from './plantDetails';
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as API from '../../api/apiMethods';
+import Toast from 'react-native-toast-message';
+
 
 const PlantParameter = ({lightColor, darkColor, icon, index}) => {
     return(
@@ -58,7 +60,15 @@ const Plant = ({plantId, onClose, onChat, status}) => {
     const [categoryVisible, setCategoryVisible] = useState(false);
     const [categorySelected, setCategorySelected] = useState(undefined);
 
-    const [responseData, setResponseData] = useState([])
+    const [responseData, setResponseData] = useState([]);
+
+    const showToast = (props) => {
+        Toast.show({
+            type: 'success',
+            text1: 'Dodano roślinę!',
+            text2: 'Dodano '+ props.name + ' do Twojej kolekcji 👋'
+        });
+    }
 
     useEffect(() => {
         getPlant();
@@ -115,11 +125,48 @@ const Plant = ({plantId, onClose, onChat, status}) => {
         }
     };
 
+    async function addPlantToUser() {
+        let tmpPlant = responseData;
+        tmpPlant.user_id = await AsyncStorage.getItem('user_id');
+        tmpPlant.status = 'own';
+        delete tmpPlant._id;
+        try {
+            const response = await API.addPlantToUser(tmpPlant,{
+                headers: {
+                    'auth-token': await AsyncStorage.getItem('auth-token')
+                }
+            });
+            if (response.status === 200) {
+                try {
+                    const response2 = await API.addPlantToCollection('61acb3eb3c6cb6769380b9bd', 
+                        { plant_id: response.data.userPlant },
+                        {
+                            headers: {
+                                'auth-token': await AsyncStorage.getItem('auth-token')
+                            }  
+                        }
+                    );
+                    if (response2.status === 200) {
+                        showToast({ name: tmpPlant.species_name });
+                    }
+                } catch (error) {
+                    if (error.response.status === 400) {
+                        console.log(error.response.status);
+                    }
+                }
+            }
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
+    }
+
     return (
         <Layout style={styles.layout}>
             <View style={styles.container}>
                 <View style={styles.imageContainer}>
-                    <Image style={{ flex: 1 }} source={{ uri: imageUrl}}/>
+                    <Image style={{ flex: 1, marginHorizontal: spacing.xs, borderTopRightRadius: rounding.sm, borderTopLeftRadius: rounding.sm}} source={{ uri: imageUrl}}/>
                     <TouchableOpacity
                         style={{ position: 'absolute', right: 10, width: 30, height: 30 }}
                         onPress={() => onClose(undefined)}
@@ -184,7 +231,7 @@ const Plant = ({plantId, onClose, onChat, status}) => {
                                     </TouchableOpacity>
                                 : <></>}
                                 {status === 'wiki' ?
-                                    <TouchableOpacity style={styles.specialAction}>
+                                    <TouchableOpacity style={styles.specialAction} onPress={() => addPlantToUser()}>
                                         <Icon type='material' name='add-circle-outline' size={28} color={colors.greenMedium} />
                                         <Text style={[styles.specialActionText, { marginLeft: spacing.xs }]}>Dodaj</Text>
                                     </TouchableOpacity>
@@ -194,6 +241,7 @@ const Plant = ({plantId, onClose, onChat, status}) => {
                     }
                 </View>
             </View>
+            <Toast />
         </Layout>
     );
 }
@@ -213,12 +261,12 @@ const styles = StyleSheet.create({
     },
     imageContainer: {
         width: '100%', 
-        aspectRatio: 16 / 9, 
+        aspectRatio: 16 / 10, 
     },
     details: {
         alignSelf: 'stretch',
         flex: 1,
-        marginTop: spacing.xs,
+        // marginTop: spacing.xs,
         // borderTopWidth: 1,
         // borderTopColor: colors.grayDark,
         backgroundColor: colors.grayBackgroundDark,
@@ -226,8 +274,9 @@ const styles = StyleSheet.create({
         paddingTop: spacing.lg,
         marginHorizontal: spacing.xs,
         marginBottom: spacing.xs,
-        borderBottomLeftRadius: rounding.sm,
-        borderBottomRightRadius: rounding.sm,
+        borderBottomLeftRadius: rounding.md,
+        borderBottomRightRadius: rounding.md,
+        // borderRadius: rounding.md,
     },
     plantNameInput: {
         position: 'absolute',

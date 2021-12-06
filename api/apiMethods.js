@@ -49,8 +49,15 @@ export const getUserCollections = (data) => {
 		data
 	);
 };
-export const getUserPlantLabel = (_id, data) => {
-	return axios.get(URI.userPlantLabel(_id),
-		data
+export const addPlantToCollection = (_id, data, headers) => {
+	return axios.put(URI.addPlantToCollection(_id),
+		data,
+		headers
+	);
+};
+export const addPlantToUser = (data, headers) => {
+	return axios.post(URI.addUserPlant,
+		data,
+		headers
 	);
 };

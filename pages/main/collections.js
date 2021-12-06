@@ -46,7 +46,7 @@ const AddButton = ({ name, marginLeft, marginRight, onPress }) => (
     </TouchableOpacity>
 );
 
-const Collections = () => {
+const Collections = ({navigation}) => {
     const [selectedPlant, setSelectedPlant] = useState(undefined);
     const [plantVisible, setPlantVisible] = useState(false);
     const [addRoom, setAddRoom] = useState(false);
@@ -55,8 +55,13 @@ const Collections = () => {
     const [collections, setCollections] = useState([]);
 
     useEffect(() => {
-        getCollections();
-    }, []);
+        const unsubscribe = navigation.addListener('focus', () => {
+            getCollections();
+        });
+
+        // Return the function to unsubscribe from the event so it gets removed on unmount
+        return unsubscribe;
+    }, [navigation]);
 
     const onPlantSelect = (e) => {
         setSelectedPlant(e);
@@ -175,28 +180,29 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
     },
     collectionPlant: {
-        width: 84, 
-        height: 100, 
+        width: 100, 
+        height: 120, 
         backgroundColor: colors.grayBackgroundDark,
         borderColor: colors.grayMedium,
-        borderWidth: 2,
+        borderWidth: 3,
         marginTop: spacing.sm,
         marginBottom: spacing.md,
         borderRadius: rounding.xs,
         marginHorizontal: spacing.sm,
     },
     collectionNewPlant: {
-        width: 84,
-        height: 100,
+        width: 100,
+        height: 120,
         marginTop: spacing.sm,
         marginBottom: spacing.md,
         marginHorizontal: spacing.sm,
         justifyContent: 'center',
     },
     collectionPlantImage: {
-        width: 80,
-        height: 80,
-        backgroundColor: colors.grayBackgroundLight,
+        flex: 1,
+        borderTopLeftRadius: rounding.xs,
+        borderTopRightRadius: rounding.xs,
+        backgroundColor: colors.grayBackgroundLight
     },
     collectionPlantName: {
         ...labels.qxs,
