@@ -59,7 +59,7 @@ const AddButton = ({ name, marginLeft, marginRight, onPress }) => (
     </TouchableOpacity>
 );
 
-const CollectionModal = ({ collectionName, collectionId, collectionPlantCount }) => {
+const CollectionModal = ({ collectionName, collectionId, collectionPlantCount, onClose, onSubmit }) => {
     const [name, setName] = useState(collectionName);
     const [id, setId] = useState(collectionId);
 
@@ -67,10 +67,12 @@ const CollectionModal = ({ collectionName, collectionId, collectionPlantCount })
 
     const save = () => {
         id ? updateCollection() : addCollection();
+        onClose();  
     }
 
     const remove = () => {
         if (id) removeCollection();
+        onClose();
     }
 
     async function addCollection() {
@@ -79,7 +81,8 @@ const CollectionModal = ({ collectionName, collectionId, collectionPlantCount })
                 headers: {
                 'auth-token': await AsyncStorage.getItem('auth-token'),
                 'user_id': await AsyncStorage.getItem('user_id')
-            }})
+            }});
+            onSubmit();
         } catch (error) {
             console.log(error);
         }
@@ -91,22 +94,31 @@ const CollectionModal = ({ collectionName, collectionId, collectionPlantCount })
                 headers: {
                     'auth-token': await AsyncStorage.getItem('auth-token'), 
                 }
-            })
+            });
+            onSubmit();
         } catch (error) {
             console.log(error);
         }
     }
 
     async function updateCollection() {
-
+        try {
+            await API.updateCollection(id, {name: name},{
+                headers: {
+                    'auth-token': await AsyncStorage.getItem('auth-token'),
+                }
+            });
+            onSubmit();
+        } catch (error) {
+            console.log(error);
+        }
     }
+
     return (
         <View style={styles.modal}>
             <Input value={name} placeholder='Nazwa pomieszczenia' style={{ margin: spacing.sm, marginBottom: 0 }} onChangeText={(text) => setName(text)} />
-            <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
-                <Button status={'danger'} style={{ marginTop: spacing.md, width: '49.5%' }} onPress={() => remove()}>USUŃ</Button>
-                <Button style={{ marginTop: spacing.md, width: '49.5%' }} onPress={() => save()}>ZAPISZ</Button>
-            </View>
+            <Button disabled={!name} style={{ marginTop: spacing.md }} onPress={() => save()}>ZAPISZ</Button>
+            <Button disabled={!id} status={'danger'} style={{ marginTop: spacing.sm }} onPress={() => remove()}>USUŃ wraz z {collectionPlantCount} szt. roślin</Button>
         </View>
     );
 }
@@ -137,6 +149,9 @@ const Collections = ({navigation}) => {
     };
 
     const setModal = () => {
+        setCollectionPlantCount(undefined); 
+        setCollectionName(''); 
+        setCollectionId(undefined);
         setModalVisible(!modalVisible);
     };
 
@@ -157,6 +172,10 @@ const Collections = ({navigation}) => {
     const renderItem = ({ item }) => (
         <Collection plantNumber={item.plantsCount} name={item.name} plants={item.plants} collection_id={item._id} onCollection={onCollection} onAddPlant={onAddPlant}/>
     );
+
+    const movePlant = (destRow, plantId) => {
+        
+    }
 
     async function getCollections() {
         try {
@@ -191,8 +210,8 @@ const Collections = ({navigation}) => {
                 <Modal
                     visible={modalVisible}
                     // backdropStyle={styles.backdrop}
-                    onBackdropPress={() => { setCollectionPlantCount(undefined); setCollectionName(''); setCollectionId(undefined); setModal(false)}}>
-                    <CollectionModal collectionName={collectionName} collectionId={collectionId} collectionPlantCount={collectionPlantCount}/>
+                    onBackdropPress={() => { setModal(false)}}>
+                    <CollectionModal onSubmit={getCollections} onClose={setModal} collectionName={collectionName} collectionId={collectionId} collectionPlantCount={collectionPlantCount}/>
                 </Modal>        
                 <View style={styles.header}>
                     <Text style={styles.title}>Moje rośliny</Text>

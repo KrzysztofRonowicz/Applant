@@ -104,3 +104,9 @@ export const removeCollection = (_id, data) => {
 		data,
 	);
 };
+export const updateCollection = (_id, data, headers) => {
+	return axios.put(URI.updateCollection(_id),
+		data,
+		headers
+	);
+};

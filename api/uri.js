@@ -23,6 +23,7 @@ export const updateUserPlantClimateParameter = (_id, climate_name) => `${userPla
 export const collections = `${collectionsUri}/`;
 export const addCollection = `${collectionsUri}/add`;
 export const removeCollection = (_id) => `${collectionsUri}/remove?_id=${_id}`;
+export const updateCollection = (_id) => `${collectionsUri}/update?_id=${_id}`;
 export const addPlantToCollection = (_id) => `${collectionsUri}/plantadd?_id=${_id}`;
 export const removePlantFromCollection = (_id) => `${collectionsUri}/plantremove?_id=${_id}`; //unused
 
