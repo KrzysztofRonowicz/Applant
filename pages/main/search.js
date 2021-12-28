@@ -25,29 +25,32 @@ const PlantAdParameters = ({ prize, water_index, light_index, compost_index }) =
     );
 }
 
-const PlantAd = ({ _id, species_name, image, water_index, light_index, compost_index, prize, onPlantSelect }) => (
-    <TouchableOpacity style={styles.plantContainer} activeOpacity={.6} onPress={() => onPlantSelect(_id)}>
+const PlantAd = ({ _id, name, image, water_index, light_index, compost_index, prize, onPlantSelect, adId }) => (
+    <TouchableOpacity style={styles.plantContainer} activeOpacity={.6} onPress={() => onPlantSelect(_id, adId)}>
         <View style={styles.plantImageContainer}>
             <Image style={styles.plantImage} source={{ uri: image}}/>
             <PlantAdParameters water_index={water_index} light_index={light_index} compost_index={compost_index} prize={prize}/>
         </View>
         <View style={{flex: 1, justifyContent: 'center'}}>
-            <Text style={styles.name}>{species_name}</Text>
+            <Text numberOfLines={1} ellipsizeMode='tail' style={styles.name}>{name}</Text>
         </View>
     </TouchableOpacity>
 );
 
-const Search = () => {
+const Search = ({route, navigation}) => {
     const [inputValue, setInputValue] = useState('');
     const [visibleFilters, setVisibleFilters] = useState(false);
     const [visibleSort, setVisibleSort] = useState(false);
     const [filters, setFilters] = useState(null);
     const [sort, setSort] = useState(null);
-    const [marketVisible, setMarketVisible] = useState(false);
-    const [selectedPlant, setSelectedPlant] = useState(undefined);
+    const [marketVisible, setMarketVisible] = useState(true);
+    const [selectedPlant, setSelectedPlant] = useState([]);
     const [plantVisible, setPlantVisible] = useState(false);
 
+    const {collection_id = null, collection_name = null} = route.params ?? {};
+
     const [responseData, setResponseData] = useState([]);
+    const [responseMarketData, setResponseMarketData] = useState([]);
 
     const onFilterSelect = (index) => {
         setFilters(index);
@@ -59,9 +62,17 @@ const Search = () => {
         setVisibleSort(false);
     };
 
-    const onPlantSelect = (id) => {
-        setSelectedPlant(id);
-        setPlantVisible(!plantVisible);
+    const onPlantSelect = (id, adId) => {
+        setSelectedPlant([id, adId]);
+        setPlantVisible(true);
+    };
+
+    const onPlantClose = () => {
+        navigation.setParams({
+            collection_id: null,
+            collection_name: null,
+        })
+        setPlantVisible(false);
     };
 
     const getImageUrl = (id) => {
@@ -71,7 +82,7 @@ const Search = () => {
     const renderItem = ({ item }) => (
         <PlantAd 
             _id={item._id}
-            species_name={item.species_name} 
+            name={item.species_name} 
             image={getImageUrl(item.image)} 
             water_index={item.water_index} 
             light_index={item.light_index} 
@@ -81,7 +92,7 @@ const Search = () => {
     );
 
     const renderMarketItem = ({ item }) => (
-        <PlantAd species_name={item.species_name} image={getImageUrl(item.image)} water_index={item.water_index} light_index={item.light_index} compost_index={item.compost_index}/>
+        <PlantAd _id={item.plant_id} name={item.name} image={getImageUrl(item.image)} prize={item.prize} onPlantSelect={onPlantSelect} adId={item._id}/>
     );
 
     const filterButon = () => (
@@ -118,9 +129,34 @@ const Search = () => {
         }
     };
 
+    async function searchMarketPlant(nextValue) {
+        setInputValue(nextValue);
+        try {
+            let response = await API.searchAds(nextValue, {
+                headers: {
+                    'auth-token': await AsyncStorage.getItem('auth-token')
+                }
+            });
+            if (response.status === 200) {
+                setResponseMarketData(response.data);
+            }
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
+    };
+
     return(
         plantVisible ?
-        <Plant plantId={selectedPlant} onClose={onPlantSelect} status={'wiki'}/> :
+            <Plant 
+                plantId={selectedPlant[0]} 
+                onClose={onPlantClose} 
+                status={marketVisible ? 'ad' : 'wiki'} 
+                adId={selectedPlant[1]}
+                roomName={collection_name}
+                roomId={collection_id}
+            /> :
         <Layout style={styles.layout}>
             <Input
                 style={styles.input}
@@ -128,7 +164,7 @@ const Search = () => {
                 textStyle={{...labels.qsp}}
                 size='large'
                 placeholder='Szukaj rośliny'
-                onChangeText={nextValue => searchPlant(nextValue)}
+                onChangeText={nextValue => marketVisible ? searchMarketPlant(nextValue) : searchPlant(nextValue)}
             />
             <View style={styles.filterSortContainer}>
                 <View style={{ flexDirection: 'row' }}>
@@ -170,8 +206,8 @@ const Search = () => {
                 </View> 
             </View>
             <FlatList
-                data={responseData}
-                renderItem={renderItem}
+                data={marketVisible ? responseMarketData : responseData}
+                renderItem={marketVisible ? renderMarketItem : renderItem}
                 numColumns={2}
                 columnWrapperStyle={{justifyContent: 'space-between'}}
                 keyExtractor={item => item._id}
@@ -254,6 +290,7 @@ const styles = StyleSheet.create({
     name: {
         ...labels.qsm,
         alignSelf: 'center',
+        paddingHorizontal: spacing.xs,
     },
 });
 

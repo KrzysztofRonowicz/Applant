@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Text, MenuItem, Input } from '@ui-kitten/components';
-import { BackHandler, StyleSheet, View, FlatList, TouchableOpacity, Image, Dimensions, TouchableWithoutFeedback } from 'react-native';
+import { Layout, Text, Modal, Input, Button } from '@ui-kitten/components';
+import { BackHandler, StyleSheet, View, FlatList, TouchableOpacity, Image, Dimensions, KeyboardAvoidingView } from 'react-native';
 import { labels, colors, spacing, rounding } from '../../style/base';
 import { alertsImages } from '../../assets/alerts/alertsImages';
 import { Icon } from 'react-native-elements'
@@ -8,6 +8,7 @@ import { About, Care, Climate } from './plantDetails';
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as API from '../../api/apiMethods';
 import Toast from 'react-native-toast-message';
+import Conversation from './conversation';
 
 
 const PlantParameter = ({lightColor, darkColor, icon, index}) => {
@@ -43,15 +44,62 @@ const DATA = [
 const SwitchCategory = ({ onTouchCategory, id, data, status, plantId, fullAccess}) => {
     switch (id) {
         case 0:
-            return (<About status={status} data={data} onTouchCategory={onTouchCategory} plantId={plantId}/>);
+            return (<About status={status} data={data} onTouchCategory={onTouchCategory} plantId={plantId} fullAccess={fullAccess}/>);
         case 1:
-            return (<Care status={status} careData={data.care} onTouchCategory={onTouchCategory} plantId={plantId}/>);
+            return (<Care status={status} careData={data.care} onTouchCategory={onTouchCategory} plantId={plantId} fullAccess={fullAccess}/>);
         case 2:
-            return (<Climate status={status} climateData={data.climate} onTouchCategory={onTouchCategory} plantId={plantId}/>);
+            return (<Climate status={status} climateData={data.climate} onTouchCategory={onTouchCategory} plantId={plantId} fullAccess={fullAccess}/>);
     }
 }
 
-const Plant = ({plantId, onClose, onChat, status}) => {
+const SellModal = ({plant_id, image, visible}) => {
+    const [name, setName] = useState('');
+    const [prize,setPrize] = useState(undefined);
+
+    async function addAd() {
+        try {
+            await API.addAd({
+                plant_id: plant_id,
+                prize: prize,
+                name: name,
+                image: image
+            },{
+                headers: {
+                    'auth-token': await AsyncStorage.getItem('auth-token')
+                }
+            })
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
+        visible();
+    }
+    return (
+        <View style={styles.modal}>
+            <Input value={name} placeholder='Nazwa ogłoszenia' style={{margin: spacing.sm, marginBottom: 0}} onChangeText={(text) => setName(text)}/>
+            <Input value={prize} placeholder='Cena (PLN)' style={{ margin: spacing.sm }} keyboardType='numeric' onChangeText={(text) => setPrize(text)}/>
+            <Button style={{marginTop: spacing.sm}} onPress={() => addAd()}>DODAJ OGŁOSZENIE</Button>
+        </View>
+    );
+}
+
+const RemoveModal = ({ onSubmit }) => {
+    return (
+        <View style={styles.modal}>
+            <Text style={{...labels.qsp, margin: spacing.sm, textAlign: 'center', marginBottom: spacing.md}}>Czy chcesz bezpowrotnie usunąć tę roślinę?</Text>
+            <Button status={'warning'}>Usuń</Button>
+        </View>
+    );
+}
+
+const Plant = ({plantId, onClose, onChat, status, adId, roomName, roomId}) => {
+    const [statusPlant, setStatusPlant] = useState(status);
+    const [collectionName, setCollectionName] = useState(roomName);
+    const [collectionId, setCollectionId] = useState(roomId);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [modalContent, setModalContent] = useState(false);
+    const [conversationVisible, setConversationVisible] = useState(false);
     const [fullAccess, setFullAccess] = useState(false);
     const [plantName, setPlantName] = useState('');
     const [imageUrl, setImageUrl] = useState('');
@@ -72,7 +120,15 @@ const Plant = ({plantId, onClose, onChat, status}) => {
 
     useEffect(() => {
         getPlant();
-    }, []);
+    }, [modalVisible]);
+
+    const onModalClose = () => {
+        setModalVisible(false);
+    }
+
+    const onConversation = () => {
+        setConversationVisible(!conversationVisible);
+    }
 
     useEffect(() => {
         setPlantName(responseData.name);
@@ -109,13 +165,12 @@ const Plant = ({plantId, onClose, onChat, status}) => {
                 });
             }
             if (response.status === 200) {
-                if (response.headers['full_access']) {
-                    setFullAccess(response.headers['full_access']);
-                }
+                setFullAccess(() => response.headers['scopes']);
                 if (response.data === []) {
                     setResponseData([]);
                 } else {
                     setResponseData(response.data);
+                    setStatusPlant(response.data.status);
                 }
             }
         } catch (error) {
@@ -138,7 +193,7 @@ const Plant = ({plantId, onClose, onChat, status}) => {
             });
             if (response.status === 200) {
                 try {
-                    const response2 = await API.addPlantToCollection('61acb3eb3c6cb6769380b9bd', 
+                    const response2 = await API.addPlantToCollection(collectionId, 
                         { plant_id: response.data.userPlant },
                         {
                             headers: {
@@ -163,19 +218,22 @@ const Plant = ({plantId, onClose, onChat, status}) => {
     }
 
     return (
+        conversationVisible ? <Conversation ad_id={adId} owner_id={responseData.user_id} onMessageClose={onConversation}/> :
         <Layout style={styles.layout}>
+            <Modal onBackdropPress={() => setModalVisible(false)} visible={modalVisible}>
+                {modalContent == 'sell' ? <SellModal plant_id={responseData._id} image={responseData.image} visible={onModalClose}/>:<RemoveModal/>}
+            </Modal>
             <View style={styles.container}>
                 <View style={styles.imageContainer}>
                     <Image style={{ flex: 1, marginHorizontal: spacing.xs, borderTopRightRadius: rounding.sm, borderTopLeftRadius: rounding.sm}} source={{ uri: imageUrl}}/>
                     <TouchableOpacity
                         style={{ position: 'absolute', right: 10, width: 30, height: 30 }}
-                        onPress={() => onClose(undefined)}
+                            onPress={() => { onClose(undefined);}}
                     >
                         <Icon type='material' name='close' size={30} color={colors.grayDark} />
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={{ position: 'absolute', bottom: 5, right: 10, width: 30, height: 30 }}
-                        onPress={() => onChat()}
                     >
                         <Icon type='material' name='photo' size={30} color={colors.grayDark} />
                     </TouchableOpacity>
@@ -197,7 +255,7 @@ const Plant = ({plantId, onClose, onChat, status}) => {
                         <PlantParameter index={indexes[1]} lightColor={colors.lightLight} darkColor={colors.lightDark} icon={'light'}/>
                         <PlantParameter index={indexes[2]} lightColor={colors.compostLight} darkColor={colors.compostDark} icon={'compost'}/>
                     </View>
-                    {categoryVisible ? <SwitchCategory onTouchCategory={onTouchCategory} id={categorySelected} data={responseData} status={status} fullAccess={fullAccess} plantId={plantId}/> :
+                    {categoryVisible ? <SwitchCategory onTouchCategory={onTouchCategory} id={categorySelected} data={responseData} status={statusPlant} fullAccess={fullAccess} plantId={plantId}/> :
                         <>
                             <FlatList
                                 data={DATA}
@@ -206,34 +264,34 @@ const Plant = ({plantId, onClose, onChat, status}) => {
                                 showsVerticalScrollIndicator={false}
                             />
                             <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
-                                {status === 'own' || fullAccess === true ? 
-                                    <TouchableOpacity style={styles.specialAction}>
+                                {statusPlant === 'own' || fullAccess === 'edit' ? 
+                                    <TouchableOpacity style={styles.specialAction} onPress={() => { setModalContent('remove'); setModalVisible(true) }}>
                                         <Icon type='material' name='delete' size={28} color={colors.grayDark} />
                                         <Text style={styles.specialActionText}>Usuń</Text>
                                     </TouchableOpacity>
                                 : <></>}
-                                {status === 'own' ?
-                                    <TouchableOpacity style={styles.specialAction}>
+                                {statusPlant === 'own' ?
+                                    <TouchableOpacity style={styles.specialAction} onPress={() => {setModalContent('sell'); setModalVisible(true)}}>
                                         <Icon type='material' name='storefront' size={28} color={colors.grayDark} />
                                         <Text style={[styles.specialActionText, { marginLeft: spacing.xs }]}>Sprzedaj</Text>
                                     </TouchableOpacity>
                                 : <></>}
-                                {status === 'ad' && fullAccess === true ?
+                                {statusPlant === 'ad' && fullAccess === 'edit' ?
                                     <TouchableOpacity style={styles.specialAction}>
                                         <Icon type='material' name='close' size={28} color={colors.grayDark} />
                                         <Text style={[styles.specialActionText, { marginLeft: spacing.xs }]}>Usuń ogłoszenie</Text>
                                     </TouchableOpacity>
                                 : <></>}
-                                {status === 'ad' && fullAccess === false ?
-                                    <TouchableOpacity style={styles.specialAction}>
+                                {statusPlant === 'ad' && fullAccess === 'view' ?
+                                    <TouchableOpacity style={styles.specialAction} onPress={() => onConversation()}>
                                         <Icon type='material' name='send' size={28} color={colors.grayDark} />
                                         <Text style={[styles.specialActionText, { marginLeft: spacing.xs }]}>Wiadomość</Text>
                                     </TouchableOpacity>
                                 : <></>}
-                                {status === 'wiki' ?
+                                {statusPlant === 'wiki' ?
                                     <TouchableOpacity style={styles.specialAction} onPress={() => addPlantToUser()}>
                                         <Icon type='material' name='add-circle-outline' size={28} color={colors.greenMedium} />
-                                        <Text style={[styles.specialActionText, { marginLeft: spacing.xs }]}>Dodaj</Text>
+                                            <Text style={[styles.specialActionText, { marginLeft: spacing.xs }]}>Dodaj{collectionName ? ' do ' + collectionName : ''}</Text>
                                     </TouchableOpacity>
                                 : <></>}
                             </View>
@@ -257,7 +315,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         paddingTop: spacing.xs,
-        backgroundColor: colors.greenMedium,
+        backgroundColor: colors.appLightBackground,
     },
     imageContainer: {
         width: '100%', 
@@ -314,7 +372,7 @@ const styles = StyleSheet.create({
         borderRadius: rounding.sm,
         paddingHorizontal: spacing.sm,
         paddingVertical: spacing.xs,
-        marginVertical: 7,
+        marginBottom: 14,
         marginHorizontal: spacing.xs,
         justifyContent: 'center',
     },
@@ -340,6 +398,16 @@ const styles = StyleSheet.create({
         marginRight: spacing.xs,
         alignSelf: 'center',
         fontWeight: 'bold'
+    },
+    backdrop: {
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modal: {
+        width: Dimensions.get('screen').width * 0.8,
+        backgroundColor: colors.appLightBackground,
+        padding: spacing.sm,
+        borderRadius: rounding.xs,
+        elevation: 20,
     },
 });
 

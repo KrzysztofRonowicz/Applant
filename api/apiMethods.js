@@ -61,3 +61,46 @@ export const addPlantToUser = (data, headers) => {
 		headers
 	);
 };
+export const getTickets = (data) => {
+	return axios.get(URI.tickets,
+		data
+	);
+};
+export const addAd = (data, headers) => {
+	return axios.post(URI.addAd,
+		data,
+		headers
+	);
+};
+export const searchAds = (name, data) => {
+	return axios.get(URI.searchAd(name),
+		data,
+	);
+};
+export const getMessages = (ad_id, owner_id, user_id, headers) => {
+	return axios.get(URI.messages(ad_id, owner_id, user_id), 
+		headers
+	);
+};
+export const sendMessage = (data, headers) => {
+	return axios.post(URI.addMessage,
+		data,
+		headers
+	);
+};
+export const getPrefixMessages = (data) => {
+	return axios.get(URI.prefixmessages,
+		data
+	);
+};
+export const addCollection = (data, headers) => {
+	return axios.post(URI.addCollection,
+		data,
+		headers
+	);
+};
+export const removeCollection = (_id, data) => {
+	return axios.delete(URI.removeCollection(_id),
+		data,
+	);
+};

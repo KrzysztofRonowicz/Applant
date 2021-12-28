@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Text, MenuItem, OverflowMenu, Card, Modal, } from '@ui-kitten/components';
+import { Layout, Text, MenuItem, OverflowMenu, Card, Modal, Input, Button } from '@ui-kitten/components';
 import { BackHandler, StyleSheet, View, FlatList, TouchableOpacity, Image, Dimensions, TouchableWithoutFeedback } from 'react-native';
 import { labels, colors, spacing, rounding } from '../../style/base';
 import { alertsImages, alertsImagesDarkColors } from '../../assets/alerts/alertsImages';
@@ -12,27 +12,40 @@ const getImageUrl = (id) => {
     return 'https://drive.google.com/uc?id=' + id;
 };
 
-const CollectionPlant = ({ plantData }) => (
-    // plant.name === 'New' ?
-    // <TouchableOpacity style={styles.collectionNewPlant}>
-    //     <Icon type='material' name={'add-circle-outline'} size={40} color={colors.grayMedium} />
-    // </TouchableOpacity> :
+const CollectionPlant = ({ plantData, onAddPlant }) => (
+    plantData._id === 'New' ?
+        <TouchableOpacity style={styles.collectionNewPlant} onPress={() => onAddPlant(plantData.collection_id, plantData.collection_name)}>
+        <Icon type='material' name={'add-circle-outline'} size={40} color={colors.grayMedium} />
+    </TouchableOpacity> :
     <TouchableOpacity style={styles.collectionPlant} activeOpacity={.6}>
         <Image source={{uri: getImageUrl(plantData.image)}} style={styles.collectionPlantImage}/>
         <Text style={styles.collectionPlantName}>{plantData.name}</Text>
     </TouchableOpacity>
 );
 
-const renderCollectionItem = ({ item }) => (
-    <CollectionPlant plantData={item} />
+const renderCollectionItem = ({ item, onAddPlant }) => (
+    <CollectionPlant plantData={item} onAddPlant={onAddPlant}/>
 );
 
-const Collection = ({ name, plants }) => (
+const Collection = ({ name, plants, collection_id, onAddPlant, onCollection, plantNumber }) => (
     <View style={styles.collectionContainer}>
+        <TouchableOpacity onPress={() => onCollection(collection_id, name, plantNumber)}>
+            <Text
+                style={{
+                    ...labels.qsp,
+                    alignSelf: 'flex-end',
+                    backgroundColor: colors.grayBackgroundDark,
+                    paddingHorizontal: spacing.md,
+                    paddingVertical: 3,
+                    borderRadius: rounding.lg
+                }}
+            >{name}
+            </Text>
+        </TouchableOpacity>
         <View style={styles.trapezoid}></View>
         <FlatList
-            data={plants}
-            renderItem={renderCollectionItem}
+            data={[...plants, {_id: 'New', collection_id: collection_id, collection_name: name}]}
+            renderItem={({item}) => renderCollectionItem({onAddPlant: onAddPlant, item: item})}
             keyExtractor={item => item._id}
             showsHorizontalScrollIndicator={false}
             horizontal={true}
@@ -46,10 +59,65 @@ const AddButton = ({ name, marginLeft, marginRight, onPress }) => (
     </TouchableOpacity>
 );
 
+const CollectionModal = ({ collectionName, collectionId, collectionPlantCount }) => {
+    const [name, setName] = useState(collectionName);
+    const [id, setId] = useState(collectionId);
+
+    const [alertVisible, setAlertVisible] = useState(false);
+
+    const save = () => {
+        id ? updateCollection() : addCollection();
+    }
+
+    const remove = () => {
+        if (id) removeCollection();
+    }
+
+    async function addCollection() {
+        try {
+            await API.addCollection({name: name}, {
+                headers: {
+                'auth-token': await AsyncStorage.getItem('auth-token'),
+                'user_id': await AsyncStorage.getItem('user_id')
+            }})
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    async function removeCollection() {
+        try {
+            await API.removeCollection(id, {
+                headers: {
+                    'auth-token': await AsyncStorage.getItem('auth-token'), 
+                }
+            })
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    async function updateCollection() {
+
+    }
+    return (
+        <View style={styles.modal}>
+            <Input value={name} placeholder='Nazwa pomieszczenia' style={{ margin: spacing.sm, marginBottom: 0 }} onChangeText={(text) => setName(text)} />
+            <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+                <Button status={'danger'} style={{ marginTop: spacing.md, width: '49.5%' }} onPress={() => remove()}>USUŃ</Button>
+                <Button style={{ marginTop: spacing.md, width: '49.5%' }} onPress={() => save()}>ZAPISZ</Button>
+            </View>
+        </View>
+    );
+}
+
 const Collections = ({navigation}) => {
     const [selectedPlant, setSelectedPlant] = useState(undefined);
+    const [collectionId, setCollectionId] = useState(undefined);
+    const [collectionName, setCollectionName] = useState(undefined);
+    const [collectionPlantCount, setCollectionPlantCount] = useState(undefined);
     const [plantVisible, setPlantVisible] = useState(false);
-    const [addRoom, setAddRoom] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
     const [moveOptionVisible, setMoveOptionVisible] = useState(true);
 
     const [collections, setCollections] = useState([]);
@@ -68,17 +136,26 @@ const Collections = ({navigation}) => {
         setPlantVisible(!plantVisible);
     };
 
-    const onAddRoom = () => {
-        setAddRoom(!addRoom);
+    const setModal = () => {
+        setModalVisible(!modalVisible);
     };
 
-    // const onPlantSelectLong = (index) => {
-    //     setMoveOptionVisible(!moveOptionVisible);
-    //     index === selectedPlant ? setSelectedPlant(undefined) : setSelectedPlant(index);
-    // };
+    const onAddPlant = (id, name) => {
+        navigation.navigate('Search', {
+            collection_id: id,
+            collection_name: name
+        })
+    }
+
+    const onCollection = (id, name, number) => {
+        setCollectionId(id);
+        setCollectionName(name);
+        setCollectionPlantCount(number);
+        setModalVisible(true);
+    }
 
     const renderItem = ({ item }) => (
-        <Collection name={item.name} plants={item.plants}/>
+        <Collection plantNumber={item.plantsCount} name={item.name} plants={item.plants} collection_id={item._id} onCollection={onCollection} onAddPlant={onAddPlant}/>
     );
 
     async function getCollections() {
@@ -94,7 +171,7 @@ const Collections = ({navigation}) => {
                 if (response.data === []) {
                     setResponseData([]);
                 } else {
-                    console.log(response.data)
+                    console.log(response.data);
                     setCollections(response.data);
                 }
             }
@@ -112,19 +189,14 @@ const Collections = ({navigation}) => {
             <Plant plantId={selectedPlant} onClose={onPlantSelect} /> :
             <Layout style={styles.layout}>
                 <Modal
-                    visible={addRoom}
+                    visible={modalVisible}
                     // backdropStyle={styles.backdrop}
-                    onBackdropPress={() => setAddRoom(false)}>
-                    <Card disabled={true}>
-                        <Text>Welcome to UI Kitten 😻</Text>
-                        <TouchableOpacity onPress={() => setAddRoom(false)}>
-                            <Text>DIMMIS</Text>
-                        </TouchableOpacity>
-                    </Card>
+                    onBackdropPress={() => { setCollectionPlantCount(undefined); setCollectionName(''); setCollectionId(undefined); setModal(false)}}>
+                    <CollectionModal collectionName={collectionName} collectionId={collectionId} collectionPlantCount={collectionPlantCount}/>
                 </Modal>        
                 <View style={styles.header}>
                     <Text style={styles.title}>Moje rośliny</Text>
-                    <AddButton onPress={onAddRoom} name={'add-circle'} />
+                    <AddButton onPress={setModal} name={'add-circle'} />
                 </View>
                 <FlatList
                     data={collections}
@@ -132,20 +204,6 @@ const Collections = ({navigation}) => {
                     keyExtractor={item => item._id}
                     showsVerticalScrollIndicator={false}
                 />
-                {moveOptionVisible === true ? 
-                    <View style={styles.moveButtons}>
-                        <TouchableOpacity style={styles.moveButton}>
-                            <Icon type='material' name={'arrow-left'} size={50} color={colors.greenMedium} />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.moveButton}>
-                            <Icon type='material' name={'arrow-right'} size={50} color={colors.greenMedium} />
-                        </TouchableOpacity>
-                        {/* <TouchableOpacity style={styles.moveButton}>
-                            <Icon type='material' name={'delete-outline'} size={50} color={colors.greenMedium} />
-                        </TouchableOpacity> */}
-                    </View>
-                    : <></>
-                }
             </Layout>
             }
         </TouchableWithoutFeedback>
@@ -177,7 +235,6 @@ const styles = StyleSheet.create({
     },
     collectionContainer: {
         marginBottom: spacing.md,
-        flexDirection: 'row',
     },
     collectionPlant: {
         width: 100, 
@@ -216,22 +273,19 @@ const styles = StyleSheet.create({
         height: 0,
         borderBottomWidth: 40,
         // borderBottomColor: colors.grayBackgroundLight,
-        borderBottomColor: colors.compostLight,
+        borderBottomColor: '#567057',
         borderLeftWidth: 50,
         borderLeftColor: 'transparent',
         borderRightWidth: 50,
         borderRightColor: 'transparent',
         borderStyle: 'solid',
     },
-    moveButtons: {
-        flexDirection: 'row',
-    },
-    moveButton: {
-        borderTopColor: colors.greenMedium,
-        borderTopWidth: 2,
-        justifyContent: 'center',
-        flex: 1,
-        alignItems: 'center',
+    modal: {
+        width: Dimensions.get('screen').width * 0.8,
+        backgroundColor: colors.appLightBackground,
+        padding: spacing.sm,
+        borderRadius: rounding.xs,
+        elevation: 20,
     },
 });
 

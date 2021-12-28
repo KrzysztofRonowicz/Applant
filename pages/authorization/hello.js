@@ -26,6 +26,7 @@ class Hello extends React.Component {
     async removeToken() {
         try {
             await AsyncStorage.removeItem('auth-token');
+            await AsyncStorage.removeItem('user_id');
             return true;
         } catch (error) {
             setTimeout(()=>navigation.navigate('Login') , 1000);

@@ -77,7 +77,7 @@ const IndicatorValue = ({value, dark, light}) => {
     );
 };
 
-export const Care = ({ onTouchCategory, plantId, careData, status }) => {
+export const Care = ({ onTouchCategory, plantId, careData, status, fullAccess }) => {
     const [saveDisabled, setSaveDisabled] = useState(true);
     const [date, setDate] = useState(null);
     const [calendarVisible, setCalendarVisible] = useState(false);
@@ -166,7 +166,7 @@ export const Care = ({ onTouchCategory, plantId, careData, status }) => {
 
     return (
         <View style={styles.container}>
-            <Modal backdropStyle={styles.backdrop} onBackdropPress={() => {setSaveDisabled(false); setModalVisible(false)}} visible={modalVisible}>
+            <Modal backdropStyle={styles.backdrop} onBackdropPress={() => {setModalVisible(false)}} visible={modalVisible}>
                 <View style={styles.modal}>
                     <Text style={styles.modalText}>
                             {selectedParameter.description} co: <Text style={styles.modalAltText}>{slider} </Text> 
@@ -179,20 +179,20 @@ export const Care = ({ onTouchCategory, plantId, careData, status }) => {
                         minimumValue={1}
                         maximumValue={30}
                         step={1}
-                        disabled={status === 'wiki'}
+                        disabled={status === 'wiki' || fullAccess === 'view'}
                     />
                     <Text style={styles.modalText}>Następny raz: </Text>
                     <Datepicker
                         style={styles.datepicker}
                         date={datepicker}
                         onSelect={nextDate => { setDatepicker(nextDate); createUpdateRequest(nextDate)}}
-                        disabled={status === 'wiki'}
+                        disabled={status === 'wiki' || fullAccess === 'view'}
                     />
                     <View style={{flex: 1, flexDirection: 'row', marginTop: spacing.sm}}>
-                        <Button onPress={() => setModalVisible(false)} style={{ flex: 1, marginRight: spacing.xs }} disabled={!selectedParameter.modified || status === 'wiki'}>
+                        <Button onPress={() => setModalVisible(false)} style={{ flex: 1, marginRight: spacing.xs }} disabled={!selectedParameter.modified || status === 'wiki' || fullAccess === 'view'}>
                             PRZYWRÓĆ
                         </Button>
-                        <Button onPress={() => updatePlant()} style={{ flex: 1, marginLeft: spacing.xs }} disabled={saveDisabled || status === 'wiki'}>
+                        <Button onPress={() => updatePlant()} style={{ flex: 1, marginLeft: spacing.xs }} disabled={saveDisabled || status === 'wiki' || fullAccess === 'view'}>
                             ZAPISZ
                         </Button>
                     </View>
@@ -231,7 +231,7 @@ export const Care = ({ onTouchCategory, plantId, careData, status }) => {
     );
 }
 
-export const Climate = ({ onTouchCategory, plantId, climateData, status }) => {
+export const Climate = ({ onTouchCategory, plantId, climateData, status, fullAccess }) => {
     const [saveDisabled, setSaveDisabled] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
     const [sliderValue, setSliderValue] = useState([40,60]);
@@ -247,7 +247,6 @@ export const Climate = ({ onTouchCategory, plantId, climateData, status }) => {
     );
 
     const onModal = (parameter) => {
-        console.log(parameter);
         setSelectedUnit(parameter.unit);
         setSelectedParameter(parameter);
         setActualValue(parameter.actual_value);
@@ -334,7 +333,7 @@ export const Climate = ({ onTouchCategory, plantId, climateData, status }) => {
                         minimumValue={0}
                         maximumValue={100}
                         step={1}
-                        disabled={status === 'wiki'}
+                        disabled={status === 'wiki' || fullAccess === 'view'}
                     />
                     <Text style={styles.modalText}>Aktualnie: <Text style={styles.modalAltText}>{actualValue}{selectedUnit} </Text></Text>
                     <Slider
@@ -343,13 +342,13 @@ export const Climate = ({ onTouchCategory, plantId, climateData, status }) => {
                         minimumValue={0}
                         maximumValue={100}
                         step={1}
-                        disabled={status === 'wiki'}
+                        disabled={status === 'wiki' || fullAccess === 'view'}
                     />
                     <View style={{ flex: 1, flexDirection: 'row', marginTop: spacing.sm }}>
-                        <Button onPress={() => setModalVisible(false)} style={{ flex: 1, marginRight: spacing.xs }} disabled={!selectedParameter.modified || status === 'wiki'}>
+                        <Button onPress={() => setModalVisible(false)} style={{ flex: 1, marginRight: spacing.xs }} disabled={!selectedParameter.modified || status === 'wiki' || fullAccess === 'view'}>
                             PRZYWRÓĆ
                         </Button>
-                        <Button onPress={() => updatePlant()} style={{ flex: 1, marginLeft: spacing.xs }} disabled={saveDisabled || status === 'wiki'}>
+                        <Button onPress={() => updatePlant()} style={{ flex: 1, marginLeft: spacing.xs }} disabled={saveDisabled || status === 'wiki' || fullAccess === 'view'}>
                             ZAPISZ
                         </Button>
                     </View>
@@ -435,13 +434,14 @@ const styles = StyleSheet.create({
         // flex: 1,
     },
     backdrop: {
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        // backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
     modal: {
         width: Dimensions.get('screen').width * 0.8,
         backgroundColor: colors.appLightBackground,
         padding: spacing.sm,
         borderRadius: rounding.xs,
+        elevation: 20,
     },
     modalText: {
         ...labels.qsm,

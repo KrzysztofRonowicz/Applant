@@ -5,42 +5,42 @@ import {labels, colors, spacing, rounding} from '../../style/base';
 import { alertsImages, alertsImagesDarkColors } from '../../assets/alerts/alertsImages';
 import { Icon } from 'react-native-elements'
 import Plant from './plant';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as API from '../../api/apiMethods';
 
-const DATA = [
-    {
-        name: 'Monstera',
-        alerts: ['water', 'bath', 'fertilization'],
-        plant_id: '61a115a21f60a745ac391127'
-    },
-    {
-        name: 'Filodendron',
-        alerts: ['water', 'shower'],
-        plant_id: '61a115a21f60a745ac391127'
-    },
-    {
-        name: 'Aloes',
-        alerts: ['temperature', 'shower'],
-        plant_id: '61a115a21f60a745ac391127'
-    },
-];
+const getImageUrl = (id) => {
+    return 'https://drive.google.com/uc?id=' + id;
+};
 
-const Ticket = ({name, alerts, onPlantSelect, plant_id}) => (
+const PrintDate = ({date}) => {
+    let d = new Date(date);
+    return (
+            <Text 
+                style={{ 
+                    ...labels.qsm, 
+                    color: colors.grayDark, 
+                    alignSelf: 'flex-start', 
+                }}>
+                    {d.toLocaleDateString()}
+            </Text>
+        );
+}
+
+const Ticket = ({data, onPlantSelect}) => (
     <View style={styles.ticketContainer}>
-        <View style={styles.ticketImage}>
-
-        </View>
+        <Image style={styles.ticketImage} source={{uri: getImageUrl(data.image)}}/>
         <View style={styles.ticketContent}>
-            <TouchableOpacity style={{ alignSelf: 'flex-start' }} onPress={() => onPlantSelect(plant_id)}>
-                <Text style={styles.ticketName}>{name}</Text>
+            <TouchableOpacity style={{ alignSelf: 'flex-start' }} onPress={() => onPlantSelect(data.plant_id)}>
+                <Text style={styles.ticketName}>{data.plant_name}</Text>
             </TouchableOpacity>
             <View style={styles.ticketButtons}>
-                {alerts.map((alert) => 
-                    <TouchableOpacity 
-                        style={[styles.ticketButton, {backgroundColor: alertsImagesDarkColors(alert)}]}
-                    >
-                        <Image style={styles.ticketButtonImage} source={alertsImages(alert)}/>
-                    </TouchableOpacity>
-                )}
+                <PrintDate date={data.exec_date} />
+                <TouchableOpacity 
+                    style={[styles.ticketButton, { backgroundColor: alertsImagesDarkColors(data.name)}]}
+                >
+                    {/* <Text style={{...labels.qxs, alignSelf: 'center', marginRight: 3}}>Wykonaj</Text> */}
+                    <Image style={styles.ticketButtonImage} source={alertsImages(data.name)}/>
+                </TouchableOpacity>
             </View>
         </View>
     </View>
@@ -51,6 +51,35 @@ const Board = ({navigation}) => {
     const [visible, setVisible] = useState(false);
     const [selectedPlant, setSelectedPlant] = useState(undefined);
     const [plantVisible, setPlantVisible] = useState(false);
+
+    const [response, setResponse] = useState([]);
+
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('focus', () => {
+            getTickets();
+        });
+
+        // Return the function to unsubscribe from the event so it gets removed on unmount
+        return unsubscribe;
+    }, [navigation]);
+
+    async function getTickets() {
+        try {
+            const response = await API.getTickets({
+                headers: {
+                    'auth-token': await AsyncStorage.getItem('auth-token'),
+                    'user_id': await AsyncStorage.getItem('user_id')
+                }
+            });
+            if (response.status === 200) {
+                setResponse(response.data);
+            }
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
+    }
 
     const onPlantSelect = (e) => {
         setSelectedPlant(e);
@@ -68,7 +97,7 @@ const Board = ({navigation}) => {
     };
 
     const renderItem = ({ item }) => (
-        <Ticket onPlantSelect={onPlantSelect} name={item.name} alerts={item.alerts} plant_id={item.plant_id}/>
+        <Ticket onPlantSelect={onPlantSelect} data={item}/>
     );
 
     const renderToggleButton = () => (
@@ -79,7 +108,7 @@ const Board = ({navigation}) => {
 
     return (
         plantVisible ? 
-        <Plant plantId={selectedPlant} onClose={onPlantSelect} onChat={onChat} status={'own'} /> :
+        <Plant plantId={selectedPlant} onClose={onPlantSelect} onChat={onChat} status={'own'}/> :
         <Layout style={styles.layout}>
             <View style={styles.header}>
                 <Text style={styles.title}>Terminarz</Text>
@@ -96,9 +125,9 @@ const Board = ({navigation}) => {
                 </OverflowMenu>
             </View>
             <FlatList
-                data={DATA}
+                data={response}
                 renderItem={renderItem}
-                keyExtractor={item => item.name}
+                keyExtractor={item => item._id}
                 showsVerticalScrollIndicator={false}
             />
         </Layout>
@@ -115,7 +144,7 @@ const styles = StyleSheet.create({
         paddingTop: spacing.sm
     },
     header: {
-        marginBottom: spacing.sm,
+        marginBottom: spacing.md,
         flexDirection: 'row',
         justifyContent: 'space-between'
     },
@@ -130,11 +159,11 @@ const styles = StyleSheet.create({
     ticketContainer: {
         backgroundColor: colors.grayBackgroundLight,
         borderRadius: rounding.sm,
-        borderWidth: 2,
+        borderWidth: 1,
         borderColor: colors.grayMedium,
-        padding: spacing.sm,
+        padding: spacing.xs,
         flexDirection: 'row',
-        marginBottom: spacing.md,
+        marginBottom: 15,
     },
     ticketImage: {
         width: 80,
@@ -146,7 +175,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.grayBackgroundDark,
         justifyContent: 'space-between',
         paddingHorizontal: spacing.sm,
-        paddingVertical: spacing.xs,
+        paddingVertical: spacing.sm,
         borderRadius: rounding.sm,
         flex: 1,
     },
@@ -156,17 +185,20 @@ const styles = StyleSheet.create({
     },
     ticketButtons: {
         flexDirection: 'row',
-        borderBottomLeftRadius: rounding.sm,
-        borderBottomRightRadius: rounding.sm,
+        justifyContent: 'space-between',
     },
     ticketButton: {
-        flex: 1,
+        // flex: 1,
         backgroundColor: colors.white,
-        borderBottomLeftRadius: rounding.sm,
-        borderBottomRightRadius: rounding.sm,
-        paddingVertical: spacing.xs,
-        marginHorizontal: 2,
+        borderRadius: rounding.sm,
+        // borderBottomLeftRadius: rounding.sm,
+        // borderBottomRightRadius: rounding.sm,
+        paddingVertical: 5,
+        paddingHorizontal: spacing.md,
+        // marginBottom: 5,
+        // marginHorizontal: 2,
         elevation: 3,
+        flexDirection: 'row'
     },
     ticketButtonImage: {
         width: 20,

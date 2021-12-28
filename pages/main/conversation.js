@@ -1,27 +1,63 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout, Text, Input, OverflowMenu, MenuItem } from '@ui-kitten/components';
-import { BackHandler, StyleSheet, FlatList, View, TouchableOpacity, TouchableWithoutFeedback, Keyboard, Dimensions } from 'react-native';
+import { BackHandler, StyleSheet, FlatList, View, TouchableOpacity, TouchableWithoutFeedback, Keyboard, Dimensions, Image } from 'react-native';
 import { colors, labels, rounding, spacing } from '../../style/base';
-import { Icon } from 'react-native-elements'
+import { Icon } from 'react-native-elements';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as API from '../../api/apiMethods';
 
-const Message = ({message}) => (
-    <View style={styles.messageRow}>
-        <View style={styles.message}>
-           <Text adjustsFontSizeToFit style={styles.messageText}>{message}</Text> 
-        </View>
-    </View>
+const DirectedMessage = ({message, sender, user}) => {
+    const setDirection = () => {
+        if (sender === user) {
+            return (
+                <View style={[styles.messageRow, { alignItems: 'flex-end' }]}>
+                    <View style={[styles.message, { backgroundColor: '#daf2df' }]}>
+                        <Text adjustsFontSizeToFit style={styles.messageText}>{message}</Text>
+                    </View>
+                </View>
+            );
+        } else {
+            return (
+                <View style={[styles.messageRow, { alignItems: 'flex-start' }]}>
+                    <View style={styles.message}>
+                        <Text adjustsFontSizeToFit style={styles.messageText}>{message}</Text>
+                    </View>
+                </View>
+            );
+        }
+    }
+
+    return setDirection();
+}
+
+const getImageUrl = (id) => {
+    return 'https://drive.google.com/uc?id=' + id;
+};
+
+const Message = ({message, sender_id, user_id}) => (
+    <DirectedMessage sender={sender_id} message={message} user={user_id}/>
 );
 
-const Conversation = ({ onMessageClose }) => {
+const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
+    const [userId, setUserId] = useState(undefined);
+    const [conversationVisible, setConversationVisible] = useState(true);
+    const [conversationId, setConversationId] = useState(undefined);
     const [overflowVisible, setOverflowVisible] = useState(false);
     const [clearVisible, setClearVisible] = useState(false);
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
 
     const [selectedIndex, setSelectedIndex] = useState(null);
+    const [responseData, setResponseData] = useState([]);
     const flatListRef = useRef();
 
     useEffect(() => {
+        getUser();
+        getMessages();
+        let intervalId = setInterval(() => {
+            getMessages();
+        }, 5000);
+        
         const keyboardDidShowListener = Keyboard.addListener(
             'keyboardDidShow',
             () => {
@@ -31,11 +67,21 @@ const Conversation = ({ onMessageClose }) => {
 
         return () => {
             keyboardDidShowListener.remove();
+            clearInterval(intervalId);
         };
     }, []);
 
+    async function getUser() {
+        try {
+            const user = await AsyncStorage.getItem('user_id');
+            setUserId(user);
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
     const renderItem = ({ item }) => (
-        <Message message={item.message}/>
+        <Message message={item.message} sender_id={item.sender_id} user_id={userId}/>
     );
 
     const scrollToTop = () => {
@@ -44,7 +90,7 @@ const Conversation = ({ onMessageClose }) => {
 
     const RenderSendIcon = () => (
         <TouchableOpacity 
-            onPress={() => onChangeInput()} 
+            onPress={() => sendMessage()} 
             style={{backgroundColor: colors.white, elevation: 3, borderRadius: rounding.sm, width: 45,aspectRatio: 1, justifyContent: 'center'}}>
             <Icon name={'send'} color={colors.greenDark}/>
         </TouchableOpacity>
@@ -58,13 +104,32 @@ const Conversation = ({ onMessageClose }) => {
         </TouchableWithoutFeedback>
     );
 
-    const onChangeInput = () => {
+    async function sendMessage() {
         scrollToTop();
         if (message.replace(/\s+/g, '').length !== 0) {
-            let tmpMsg = { message : message};
-            setMessages((msgs) => [tmpMsg, ...msgs]);
+            let tmpMsg = { 
+                sender_id: userId,
+                message : message
+            };
+            setResponseData((msgs) => [tmpMsg, ...msgs]);
             setMessage('');
+            try {
+                await API.sendMessage({
+                    conversation_id: conversationId,
+                    message: message,
+                    sender_id: userId
+                },{
+                    headers: {
+                        'auth-token': await AsyncStorage.getItem('auth-token')
+                    }
+                });
+            } catch (error) {
+                if (error.response.status === 400) {
+                    console.log(error.response.status);
+                }
+            }
         }
+        getMessages();
     }
 
     const onClear = () => {
@@ -77,51 +142,64 @@ const Conversation = ({ onMessageClose }) => {
         }
     }
 
-    const onItemSelect = (index) => {
-        setSelectedIndex(index);
-        setOverflowVisible(false);
-    };
-
     const renderToggleButton = () => (
         <TouchableOpacity onPress={() => setOverflowVisible(true)} style={{justifyContent: 'center'}}>
             <Icon type='material' name='more-vert' size={30} color={colors.white} />
         </TouchableOpacity>
     );
 
+    async function getMessages() {
+        try {
+            const response = await API.getMessages(ad_id, owner_id, await AsyncStorage.getItem('user_id'), 
+            {
+                headers: {
+                    'auth-token': await AsyncStorage.getItem('auth-token')
+                }
+            })
+            if (response.status === 200) {
+                setConversationId(response.data[0].conversation_id);
+                if (response.data[0].message) {
+                    setResponseData(response.data);
+                }
+            }
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
+    }
+
     return(
         <Layout style={styles.layout}>
             <View style={styles.adContainer}>
                 <TouchableOpacity
                     style={{ justifyContent: 'center', aspectRatio: 1 }}
-                    onPress={() => onMessageClose()}
+                    onPress={() => { onMessageClose()}}
                 >
                     <Icon color={colors.grayDark} name={'arrow-back'} size={28} />
                 </TouchableOpacity>
                 <View style={styles.ad}>
-                    <View style={styles.adImage}>
-
-                    </View>
+                    <Image source={{uri: getImageUrl(ad.image)}} style={styles.adImage}/>
                     <View style={{ flex: 1 }}>
-                        <Text style={{ ...labels.qsm, fontWeight: 'bold', color: colors.white }}>Monstera</Text>
-                        <Text style={{ ...labels.qxs, fontWeight: 'bold', color: colors.grayLight }}>60 zł</Text>
+                        <Text style={{ ...labels.qsm, fontWeight: 'bold', color: colors.white }}>{ad.name}</Text>
+                        <Text style={{ ...labels.qxs, fontWeight: 'bold', color: colors.grayLight }}>{ad.prize} zł</Text>
                     </View>
                     <OverflowMenu
                         anchor={renderToggleButton}
                         visible={overflowVisible}
-                        selectedIndex={selectedIndex}
-                        onSelect={onItemSelect}
+                        onSelect={index => setSelectedIndex(index.row)}
                         onBackdropPress={() => setOverflowVisible(false)}>
-                        <MenuItem title='Środa (03.11)' />
-                        <MenuItem title='Czwartek (04.11)' />
-                        <MenuItem title='Piątek (05.11)' />
+                        <MenuItem title='Szczegóły' />
+                        <MenuItem title='Kopiuj profil' />
+                        <MenuItem title='Usuń konwersację' />
                     </OverflowMenu>
                 </View>
             </View>
             <FlatList
                 ref={flatListRef}
-                data={messages}
+                data={responseData}
                 renderItem={renderItem}
-                keyExtractor={item => item.id}
+                keyExtractor={item => item._id}
                 showsVerticalScrollIndicator={false}
                 inverted={true}
                 style={{ marginBottom: spacing.sm}}
@@ -159,7 +237,7 @@ const styles = StyleSheet.create({
     },
     messageRow: {
         flex: 1,
-        alignItems: 'flex-start', // Direction of message
+        // alignItems: 'flex-start', // Direction of message
         justifyContent: 'center',
         padding: spacing.xs
     },

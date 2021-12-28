@@ -6,132 +6,132 @@ import { alertsImages, alertsImagesDarkColors } from '../../assets/alerts/alerts
 import { Icon } from 'react-native-elements'
 import Plant from './plant';
 import Conversation from './conversation';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as API from '../../api/apiMethods';
 
-const DATA = [
-    {
-        id: '1',
-        usernames: ['Jan Kowalski', 'Krzysztof Ronowicz'],
-        name: 'Monstera',
-        messages:
-            [
-                {
-                    name: 'Jan Kowalski',
-                    date: '13.11',
-                    message: 'Dzień dobry!'
-                },
-                {
-                    name: 'Krzysztof Ronowicz',
-                    date: '13.11',
-                    message: 'Dzień dobry!'
-                },
-            ],
-    },
-    {
-        id: '1',
-        usernames: ['Jan Kowalski', 'Krzysztof Ronowicz'],
-        name: 'Monstera',
-        messages:
-            [
-                {
-                    name: 'Jan Kowalski',
-                    date: '13.11',
-                    message: 'Dzień dobry!'
-                },
-                {
-                    name: 'Krzysztof Ronowicz',
-                    date: '13.11',
-                    message: 'Dzień dobry!'
-                },
-            ],
-    },
-    {
-        id: '1',
-        usernames: ['Jan Kowalski', 'Krzysztof Ronowicz'],
-        name: 'Monstera',
-        messages:
-            [
-                {
-                    name: 'Jan Kowalski',
-                    date: '13.11',
-                    message: 'Dzień dobry!'
-                },
-                {
-                    name: 'Krzysztof Ronowicz',
-                    date: '13.11',
-                    message: 'Dzień dobry!'
-                },
-            ],
-    },
-    {
-        id: '1',
-        usernames: ['Jan Kowalski', 'Krzysztof Ronowicz'],
-        name: 'Monstera',
-        messages:
-            [
-                {
-                    name: 'Jan Kowalski',
-                    date: '13.11',
-                    message: 'Dzień dobry!'
-                },
-                {
-                    name: 'Krzysztof Ronowicz',
-                    date: '13.11',
-                    message: 'Dzień dobry!'
-                },
-            ],
-    },
-];
-const Ticket = ({ name, alerts, onMessageSelect }) => (
+const getImageUrl = (id) => {
+    return 'https://drive.google.com/uc?id=' + id;
+};
+
+const printConversationMember = (id, users) => {
+    if(users[0]._id !== id) {
+        return (users[0].name); 
+    } else {
+        return (users[1].name);
+    }
+};
+
+const printDate = (dateString) => {
+    const date = new Date(dateString);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const monthString = month >= 10 ? month : `0${month}`;
+    const dayString = day >= 10 ? day : `0${day}`;
+    return `${dayString}/${monthString}`;
+}
+
+const PrefixMessageText = ({id, senderId, readed, message}) => {
+    if (!readed && id !== senderId) {
+        return (<Text numberOfLines={1} ellipsizeMode='tail' style={styles.altTicketAdMessage}>{message}</Text>);
+    } else {
+        if (id === senderId) {
+            return (<Text numberOfLines={1} ellipsizeMode='tail' style={styles.ticketAdMessage}>Ja: {message}</Text>); 
+        } else {
+            return (<Text numberOfLines={1} ellipsizeMode='tail' style={styles.ticketAdMessage}>Ja: {message}</Text>);
+        }
+    }
+}
+
+const Ticket = ({ data, onMessageSelect, user_id }) => (
     <View style={styles.ticketContainer}>
-        <View style={styles.ticketImage}>
-
-        </View>
+        <Image source={{uri: getImageUrl(data.ad.image)}} style={styles.ticketImage}/>
         <View style={styles.ticketContent}>
             <TouchableOpacity 
                 style={{ alignSelf: 'flex-start', width: '100%' }} 
                 onPress={() => {
-                    Vibration.vibrate(1);
-                    onMessageSelect(1);
+                    // Vibration.vibrate(1);
+                    onMessageSelect(data.ad._id, data.users[0]._id, data.ad);
                 }}
             >
                 <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
-                    <Text style={styles.ticketUserName}>Jan Kowalski</Text>
-                    <Text style={styles.ticketDate}>11.11</Text>
+                    <Text style={styles.ticketUserName}>{printConversationMember(user_id,data.users)}</Text>
+                    <Text style={styles.ticketDate}>{printDate(data.message[0].createdAt)}</Text>
                 </View>
-                <Text style={styles.ticketAdName}>{name}</Text>
-                <Text style={styles.ticketAdMessage}>Dzień dobry! Czy ogłoszenie nada...</Text>
+                <Text numberOfLines={1} ellipsizeMode='tail' style={styles.ticketAdName}>{data.ad.name}</Text>
+                <PrefixMessageText 
+                    id={user_id} 
+                    senderId={data.message[0].sender_id} 
+                    readed={data.message[0].readed} 
+                    message={data.message[0].message}
+                />
             </TouchableOpacity>
         </View>
     </View>
 )
 
 const Chat = ({ navigation }) => {
+    const [userId, setUserId] = useState(undefined);
     const [selectedIndex, setSelectedIndex] = useState(null);
     const [visible, setVisible] = useState(false);
     const [selectedPlant, setSelectedPlant] = useState(undefined);
+    const [plantOwner, setPlantOwner] = useState(undefined);
+    const [ad, setAd] = useState(undefined);
     const [messageVisible, setMessageVisible] = useState(false);
 
-    const onMessageSelect = (e) => {
-        setSelectedPlant(e);
+    const [responseData, setResponseData] = useState([]);
+
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('focus', () => {
+            getUser();
+            getPrefixMessages();
+        });
+        return unsubscribe;
+    }, [navigation]);
+
+    const onMessageSelect = (plant, owner, ad) => {
+        setSelectedPlant(plant);
+        setPlantOwner(owner);
+        setAd(ad);
         setMessageVisible(!messageVisible);
     };
 
     const onMessageClose = () => {
+        getPrefixMessages();
         setMessageVisible(!messageVisible);
     }
-
-    const onChat = () => {
-        onPlantSelect(undefined);
-        navigation.navigate('Chat');
-    };
 
     const onItemSelect = (index) => {
         setSelectedIndex(index);
         setVisible(false);
     };
 
+    async function getUser() {
+        try {
+            const user = await AsyncStorage.getItem('user_id');
+            setUserId(user);
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    async function getPrefixMessages(){
+        try {
+            const response = await API.getPrefixMessages({
+                headers: {
+                    'auth-token': await AsyncStorage.getItem('auth-token'),
+                    'user_id': await AsyncStorage.getItem('user_id'),
+                }
+            });
+            if (response.status === 200) {
+                setResponseData(response.data);
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
     const renderItem = ({ item }) => (
-        <Ticket onMessageSelect={onMessageSelect} name={item.name} alerts={item.alerts} />
+        <Ticket onMessageSelect={onMessageSelect} data={item} user_id={userId}/>
     );
 
     const renderToggleButton = () => (
@@ -142,7 +142,12 @@ const Chat = ({ navigation }) => {
 
     return (
         messageVisible ?
-            <Conversation onMessageClose={onMessageClose}/> :
+            <Conversation 
+                onMessageClose={onMessageClose} 
+                ad_id={selectedPlant} 
+                owner_id={plantOwner}
+                ad={ad}
+            /> :
             <Layout style={styles.layout}>
                 <View style={styles.header}>
                     <Text style={styles.title}>Wiadomości</Text>
@@ -159,9 +164,9 @@ const Chat = ({ navigation }) => {
                     </OverflowMenu>
                 </View>
                 <FlatList
-                    data={DATA}
+                    data={responseData}
                     renderItem={renderItem}
-                    keyExtractor={item => item.name}
+                    keyExtractor={item => item.message[0].conversation_id}
                     showsVerticalScrollIndicator={false}
                 />
             </Layout>
@@ -224,7 +229,10 @@ const styles = StyleSheet.create({
     },
     ticketAdMessage: {
         color: colors.grayDark,
-        // color: colors.black,
+        ...labels.qxs,
+    },
+    altTicketAdMessage: {
+        color: colors.black,
         ...labels.qxs,
     },
     ticketDate: {
