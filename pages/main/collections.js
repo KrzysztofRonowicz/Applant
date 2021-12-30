@@ -12,22 +12,68 @@ const getImageUrl = (id) => {
     return 'https://drive.google.com/uc?id=' + id;
 };
 
-const CollectionPlant = ({ plantData, onAddPlant }) => (
+const PlantCard = ({plantData, insertPlantAbove, insertPlantBelow, onPlantSelect}) => {
+    const [moveEnabled, setMoveEnabled] = useState(false);
+
+    const onMovePress = () => {
+        setMoveEnabled(!moveEnabled);
+    }
+
+    return (
+        <TouchableOpacity style={styles.collectionPlant} activeOpacity={.6} onLongPress={onMovePress} onPress={() => onPlantSelect(plantData._id)}>
+            <Image source={{ uri: getImageUrl(plantData.image) }} style={styles.collectionPlantImage} />
+            <Text numberOfLines={1} ellipsizeMode='tail' style={styles.collectionPlantName}>{plantData.name}</Text>
+            {moveEnabled ? 
+                <View style={{ position: 'absolute', width: '100%', height: '100%' }}>
+                    <TouchableOpacity 
+                        style={{ 
+                            borderBottomColor: colors.appLightBackground, 
+                            bordeBottomrWidth: 1, 
+                            justifyContent: 'center', 
+                            width: '100%', 
+                            height: '50%', 
+                            backgroundColor: 'rgba(248, 248, 248, 0.5)' 
+                        }}
+                        onLongPress={onMovePress}
+                        onPress={() => insertPlantAbove(plantData._id)}
+                    >
+                        <Icon type='material' name='arrow-drop-up' size={60} color={'white'} />
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                        style={{ 
+                            borderTopColor: colors.appLightBackground, 
+                            borderTopWidth: 1, 
+                            justifyContent: 'center', 
+                            width: '100%', 
+                            height: '50%', 
+                            backgroundColor: 'rgba(248, 248, 248, 0.5)' 
+                        }}
+                        onLongPress={onMovePress}
+                        onPress={() => insertPlantBelow(plantData._id)}
+                    >
+                        <Icon type='material' name='arrow-drop-down' size={60} color={'white'} />
+                    </TouchableOpacity>
+                </View>
+            :    
+                <></>
+            }
+        </TouchableOpacity>
+    );
+}
+
+const CollectionPlant = ({ plantData, onAddPlant, insertPlantAbove, insertPlantBelow, onPlantSelect }) => (
     plantData._id === 'New' ?
         <TouchableOpacity style={styles.collectionNewPlant} onPress={() => onAddPlant(plantData.collection_id, plantData.collection_name)}>
         <Icon type='material' name={'add-circle-outline'} size={40} color={colors.grayMedium} />
     </TouchableOpacity> :
-    <TouchableOpacity style={styles.collectionPlant} activeOpacity={.6}>
-        <Image source={{uri: getImageUrl(plantData.image)}} style={styles.collectionPlantImage}/>
-        <Text style={styles.collectionPlantName}>{plantData.name}</Text>
-    </TouchableOpacity>
+    <PlantCard plantData={plantData} insertPlantAbove={insertPlantAbove} insertPlantBelow={insertPlantBelow} onPlantSelect={onPlantSelect}/>
 );
 
-const renderCollectionItem = ({ item, onAddPlant }) => (
-    <CollectionPlant plantData={item} onAddPlant={onAddPlant}/>
+const renderCollectionItem = ({ item, onAddPlant, insertPlantAbove, insertPlantBelow, onPlantSelect }) => (
+    <CollectionPlant plantData={item} onAddPlant={onAddPlant} insertPlantAbove={insertPlantAbove} insertPlantBelow={insertPlantBelow} onPlantSelect={onPlantSelect}/>
 );
 
-const Collection = ({ name, plants, collection_id, onAddPlant, onCollection, plantNumber }) => (
+const Collection = ({ name, plants, collection_id, onAddPlant, onCollection, plantNumber, insertPlantAbove, insertPlantBelow, onPlantSelect }) => (
     <View style={styles.collectionContainer}>
         <TouchableOpacity onPress={() => onCollection(collection_id, name, plantNumber)}>
             <Text
@@ -45,7 +91,15 @@ const Collection = ({ name, plants, collection_id, onAddPlant, onCollection, pla
         <View style={styles.trapezoid}></View>
         <FlatList
             data={[...plants, {_id: 'New', collection_id: collection_id, collection_name: name}]}
-            renderItem={({item}) => renderCollectionItem({onAddPlant: onAddPlant, item: item})}
+            renderItem={
+                ({item}) => 
+                renderCollectionItem({
+                    onAddPlant: onAddPlant, 
+                    item: item, 
+                    insertPlantAbove: (data) => insertPlantAbove(collection_id, data),
+                    insertPlantBelow: (data) => insertPlantBelow(collection_id, data),
+                    onPlantSelect: onPlantSelect
+                })}
             keyExtractor={item => item._id}
             showsHorizontalScrollIndicator={false}
             horizontal={true}
@@ -62,8 +116,6 @@ const AddButton = ({ name, marginLeft, marginRight, onPress }) => (
 const CollectionModal = ({ collectionName, collectionId, collectionPlantCount, onClose, onSubmit }) => {
     const [name, setName] = useState(collectionName);
     const [id, setId] = useState(collectionId);
-
-    const [alertVisible, setAlertVisible] = useState(false);
 
     const save = () => {
         id ? updateCollection() : addCollection();
@@ -130,7 +182,6 @@ const Collections = ({navigation}) => {
     const [collectionPlantCount, setCollectionPlantCount] = useState(undefined);
     const [plantVisible, setPlantVisible] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
-    const [moveOptionVisible, setMoveOptionVisible] = useState(true);
 
     const [collections, setCollections] = useState([]);
 
@@ -146,6 +197,9 @@ const Collections = ({navigation}) => {
     const onPlantSelect = (e) => {
         setSelectedPlant(e);
         setPlantVisible(!plantVisible);
+        if (!e) {
+            getCollections();
+        }
     };
 
     const setModal = () => {
@@ -170,11 +224,77 @@ const Collections = ({navigation}) => {
     }
 
     const renderItem = ({ item }) => (
-        <Collection plantNumber={item.plantsCount} name={item.name} plants={item.plants} collection_id={item._id} onCollection={onCollection} onAddPlant={onAddPlant}/>
+        <Collection 
+            plantNumber={item.plantsCount} 
+            name={item.name} 
+            plants={item.plants} 
+            collection_id={item._id} 
+            onCollection={onCollection} 
+            onAddPlant={onAddPlant}
+            onPlantSelect={onPlantSelect}
+            insertPlantAbove={insertPlantAbove}
+            insertPlantBelow={insertPlantBelow}
+        />
     );
 
-    const movePlant = (destRow, plantId) => {
-        
+    const insertPlantAbove = (collectionId, plantId) => {
+        const currentRow = collections.findIndex(collection => collection._id === collectionId);
+        if (currentRow !== 0) {
+            const aboveCollectionId = collections[currentRow - 1]._id;
+            addPlantToCollection(aboveCollectionId, plantId);
+            removePlantFromCollection(collectionId, plantId);
+        }
+    }
+
+    const insertPlantBelow = (collectionId, plantId) => {
+        const currentRow = collections.findIndex(collection => collection._id === collectionId);
+        if (currentRow !== collections.length - 1) {
+            const belowCollectionId = collections[currentRow + 1]._id;
+            addPlantToCollection(belowCollectionId, plantId);
+            removePlantFromCollection(collectionId, plantId);
+        }
+    }
+
+    async function addPlantToCollection(collectionId, plantId) {
+        try {
+            const response2 = await API.addPlantToCollection(collectionId,
+                { plant_id: plantId },
+                {
+                    headers: {
+                        'auth-token': await AsyncStorage.getItem('auth-token')
+                    }
+                }
+            );
+            if (response2.status === 200) {
+                
+            }
+            getCollections();
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
+    }
+
+    async function removePlantFromCollection(collectionId, plantId) {
+        try {
+            const response2 = await API.removePlantFromCollection(collectionId,
+                { plant_id: plantId },
+                {
+                    headers: {
+                        'auth-token': await AsyncStorage.getItem('auth-token')
+                    }
+                }
+            );
+            if (response2.status === 200) {
+
+            }
+            getCollections();
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
     }
 
     async function getCollections() {
@@ -190,7 +310,6 @@ const Collections = ({navigation}) => {
                 if (response.data === []) {
                     setResponseData([]);
                 } else {
-                    console.log(response.data);
                     setCollections(response.data);
                 }
             }
@@ -205,7 +324,7 @@ const Collections = ({navigation}) => {
         <TouchableWithoutFeedback>
             {
             plantVisible ?
-            <Plant plantId={selectedPlant} onClose={onPlantSelect} /> :
+            <Plant plantId={selectedPlant} onClose={onPlantSelect} status={'own'}/> :
             <Layout style={styles.layout}>
                 <Modal
                     visible={modalVisible}

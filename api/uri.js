@@ -7,6 +7,7 @@ const collectionsUri = `${hostUri}/collections`;
 const ticketUri = `${hostUri}/ticket`;
 const adUri = `${hostUri}/ad`;
 const messageUri = `${hostUri}/message`;
+const conversationUri = `${hostUri}/conversation`;
 
 export const register = `${userUri}/register`;
 export const login = `${userUri}/login`;
@@ -25,7 +26,7 @@ export const addCollection = `${collectionsUri}/add`;
 export const removeCollection = (_id) => `${collectionsUri}/remove?_id=${_id}`;
 export const updateCollection = (_id) => `${collectionsUri}/update?_id=${_id}`;
 export const addPlantToCollection = (_id) => `${collectionsUri}/plantadd?_id=${_id}`;
-export const removePlantFromCollection = (_id) => `${collectionsUri}/plantremove?_id=${_id}`; //unused
+export const removePlantFromCollection = (_id) => `${collectionsUri}/plantremove?_id=${_id}`;
 
 export const tickets = `${ticketUri}/`;
 export const addTicket = `${ticketUri}/add`;
@@ -34,7 +35,11 @@ export const removeAllTickets = (plant_id) => `${ticketUri}/remove?plant_id=${pl
 
 export const addAd = `${adUri}/add`;
 export const searchAd = (name) => `${adUri}/search?name=${name}`;
+export const removeAd = (plant_id) => `${adUri}/remove?plant_id=${plant_id}`;
 
 export const messages = (ad_id, owner_id, user_id) => `${messageUri}/messages?ad_id=${ad_id}&owner_id=${owner_id}&user_id=${user_id}`;
 export const addMessage = `${messageUri}/add`;
 export const prefixmessages = `${messageUri}/prefixmessages`;
+
+export const removeConversation = (_id) => `${conversationUri}/remove?_id=${_id}`;
+export const removeAllConversations = (ad_id) => `${conversationUri}/removeall?ad_id=${ad_id}`;

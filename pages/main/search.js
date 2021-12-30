@@ -25,8 +25,8 @@ const PlantAdParameters = ({ prize, water_index, light_index, compost_index }) =
     );
 }
 
-const PlantAd = ({ _id, name, image, water_index, light_index, compost_index, prize, onPlantSelect, adId }) => (
-    <TouchableOpacity style={styles.plantContainer} activeOpacity={.6} onPress={() => onPlantSelect(_id, adId)}>
+const PlantAd = ({ _id, name, image, water_index, light_index, compost_index, prize, onPlantSelect, adId, rawImage }) => (
+    <TouchableOpacity style={styles.plantContainer} activeOpacity={.6} onPress={() => onPlantSelect(_id, adId, name, prize, rawImage)}>
         <View style={styles.plantImageContainer}>
             <Image style={styles.plantImage} source={{ uri: image}}/>
             <PlantAdParameters water_index={water_index} light_index={light_index} compost_index={compost_index} prize={prize}/>
@@ -62,8 +62,8 @@ const Search = ({route, navigation}) => {
         setVisibleSort(false);
     };
 
-    const onPlantSelect = (id, adId) => {
-        setSelectedPlant([id, adId]);
+    const onPlantSelect = (id, adId, name, prize, image) => {
+        setSelectedPlant([id, adId, name, prize, image]);
         setPlantVisible(true);
     };
 
@@ -92,7 +92,7 @@ const Search = ({route, navigation}) => {
     );
 
     const renderMarketItem = ({ item }) => (
-        <PlantAd _id={item.plant_id} name={item.name} image={getImageUrl(item.image)} prize={item.prize} onPlantSelect={onPlantSelect} adId={item._id}/>
+        <PlantAd _id={item.plant_id} name={item.name} rawImage={item.image} image={getImageUrl(item.image)} prize={item.prize} onPlantSelect={onPlantSelect} adId={item._id}/>
     );
 
     const filterButon = () => (
@@ -156,6 +156,12 @@ const Search = ({route, navigation}) => {
                 adId={selectedPlant[1]}
                 roomName={collection_name}
                 roomId={collection_id}
+                ad={{
+                    _id: selectedPlant[1],
+                    name: selectedPlant[2],
+                    prize: selectedPlant[3],
+                    image: selectedPlant[4],
+                }}
             /> :
         <Layout style={styles.layout}>
             <Input

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Text, MenuItem, OverflowMenu, Input, Calendar, Modal, Button, Datepicker } from '@ui-kitten/components';
+import { Layout, Text, MenuItem, OverflowMenu, Input, Calendar, Modal, Button, Datepicker, NativeDateService  } from '@ui-kitten/components';
 import { BackHandler, StyleSheet, View, FlatList, TouchableOpacity, Image, Dimensions, TouchableWithoutFeedback, ScrollView } from 'react-native';
 import { labels, colors, spacing, rounding } from '../../style/base';
 import { alertsImages, alertsImagesDarkColors, alertsImagesLightColors } from '../../assets/alerts/alertsImages';
@@ -77,6 +77,32 @@ const IndicatorValue = ({value, dark, light}) => {
     );
 };
 
+const i18n = {
+    dayNames: {
+        short: ['Pn', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Niedz'],
+        long: ['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota', 'Niedziela'],
+    },
+    monthNames: {
+        short: ['St', 'Lut', 'Mrz', 'Kw', 'Maj', 'Cz', 'Lip', 'Sier', 'Wrz', 'Paź', 'Lis', 'Gr'],
+        long: [
+            'Styczeń',
+            'Luty',
+            'Marzec',
+            'Kwiecień',
+            'Maj',
+            'Czerwiec',
+            'Lipiec',
+            'Sierpień',
+            'Wrzesień',
+            'Październik',
+            'Listopad',
+            'Grudzień',
+        ],
+    },
+};
+
+const localeDateService = new NativeDateService('pl', { i18n, startDayOfWeek: 0 });
+
 export const Care = ({ onTouchCategory, plantId, careData, status, fullAccess }) => {
     const [saveDisabled, setSaveDisabled] = useState(true);
     const [date, setDate] = useState(null);
@@ -86,6 +112,9 @@ export const Care = ({ onTouchCategory, plantId, careData, status, fullAccess })
 
     const [slider, setSlider] = useState([]);
     const [datepicker, setDatepicker] = useState(new Date(Date.now() + (3600 * 1000 * 24)));
+    const now = new Date();
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const yearLater = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 365)
 
     const [requestData, setRequestData] = useState(careData);
     const [responseData, setResponseData] = useState(careData);
@@ -184,7 +213,10 @@ export const Care = ({ onTouchCategory, plantId, careData, status, fullAccess })
                     <Text style={styles.modalText}>Następny raz: </Text>
                     <Datepicker
                         style={styles.datepicker}
+                        dateService={localeDateService}
                         date={datepicker}
+                        min={now}
+                        max={yearLater}
                         onSelect={nextDate => { setDatepicker(nextDate); createUpdateRequest(nextDate)}}
                         disabled={status === 'wiki' || fullAccess === 'view'}
                     />
@@ -216,6 +248,10 @@ export const Care = ({ onTouchCategory, plantId, careData, status, fullAccess })
                             style={{width: '100%'}}
                             date={date}
                             onSelect={nextDate => setDate(nextDate)}
+                            dateService={localeDateService}
+                            date={datepicker}
+                            min={now}
+                            max={yearLater}
                             // renderDay={DayCell}
                         />
                     </ScrollView> :
@@ -372,9 +408,7 @@ export const Climate = ({ onTouchCategory, plantId, climateData, status, fullAcc
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        // borderRadius: rounding.sm,
         marginBottom: spacing.md,
-        // borderColor: colors.greenDark,
     },
     header: {
         backgroundColor: colors.greenDark,

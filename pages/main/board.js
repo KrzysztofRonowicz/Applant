@@ -12,21 +12,51 @@ const getImageUrl = (id) => {
     return 'https://drive.google.com/uc?id=' + id;
 };
 
-const PrintDate = ({date}) => {
-    let d = new Date(date);
+const PrintDate = ({dateString}) => {
+    let date = new Date(dateString);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const monthString = month >= 10 ? month : `0${month}`;
+    const dayString = day >= 10 ? day : `0${day}`;
     return (
             <Text 
                 style={{ 
                     ...labels.qsm, 
                     color: colors.grayDark, 
-                    alignSelf: 'flex-start', 
+                    alignSelf: 'center', 
                 }}>
-                    {d.toLocaleDateString()}
+            {`${dayString}.${monthString}.${date.getFullYear()}`}
             </Text>
         );
 }
 
-const Ticket = ({data, onPlantSelect}) => (
+const TicketButton = ({data, onUpdateTicket}) => {
+    const [updatePressed, setUpdatePressed] = useState(false);
+
+    const RenderButon = () => {
+        if (updatePressed) {
+            return (
+                <View style={[styles.ticketButton, { backgroundColor: 'rgba(0,0,0,0)', elevation: 0, borderWidth: 1, borderColor: colors.greenLight}]}>
+                    <Icon type='material' name='done' size={22} color={colors.greenLight} style={styles.ticketButtonImage}/>
+                </View>
+            )
+        } else {
+            return (
+                <TouchableOpacity
+                    onPress={() => { setUpdatePressed(true); onUpdateTicket(data._id) }}
+                    style={[styles.ticketButton, { backgroundColor: alertsImagesDarkColors(data.name) }]}
+                >
+                    {/* <Text style={{...labels.qxs, alignSelf: 'center', marginRight: 3}}>Wykonaj</Text> */}
+                    <Image style={styles.ticketButtonImage} source={alertsImages(data.name)} />
+                </TouchableOpacity>
+            );
+        }   
+    }
+
+    return (<RenderButon/>);
+}
+
+const Ticket = ({data, onPlantSelect, onUpdateTicket}) => (
     <View style={styles.ticketContainer}>
         <Image style={styles.ticketImage} source={{uri: getImageUrl(data.image)}}/>
         <View style={styles.ticketContent}>
@@ -34,13 +64,8 @@ const Ticket = ({data, onPlantSelect}) => (
                 <Text style={styles.ticketName}>{data.plant_name}</Text>
             </TouchableOpacity>
             <View style={styles.ticketButtons}>
-                <PrintDate date={data.exec_date} />
-                <TouchableOpacity 
-                    style={[styles.ticketButton, { backgroundColor: alertsImagesDarkColors(data.name)}]}
-                >
-                    {/* <Text style={{...labels.qxs, alignSelf: 'center', marginRight: 3}}>Wykonaj</Text> */}
-                    <Image style={styles.ticketButtonImage} source={alertsImages(data.name)}/>
-                </TouchableOpacity>
+                <PrintDate dateString={data.exec_date} />
+                <TicketButton data={data} onUpdateTicket={onUpdateTicket}/>
             </View>
         </View>
     </View>
@@ -50,6 +75,7 @@ const Board = ({navigation}) => {
     const [selectedIndex, setSelectedIndex] = useState(null);
     const [visible, setVisible] = useState(false);
     const [selectedPlant, setSelectedPlant] = useState(undefined);
+    const [selectedTicket, setSelectedTicket] = useState(undefined);
     const [plantVisible, setPlantVisible] = useState(false);
 
     const [response, setResponse] = useState([]);
@@ -81,9 +107,33 @@ const Board = ({navigation}) => {
         }
     }
 
+    async function updateTicket(e) {
+        try {
+            const response = await API.updateTicket(e, {
+                headers: {
+                    'auth-token': await AsyncStorage.getItem('auth-token')
+                }
+            });
+            if (response.status === 200) {
+                setTimeout(() => {
+                    getTickets();
+                }, 1000);
+            }
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
+    }
+
     const onPlantSelect = (e) => {
         setSelectedPlant(e);
         setPlantVisible(!plantVisible);
+    };
+
+    const onUpdateTicket = (e) => {
+        setSelectedTicket(e);
+        updateTicket(e);
     };
 
     const onChat = () => {
@@ -97,7 +147,7 @@ const Board = ({navigation}) => {
     };
 
     const renderItem = ({ item }) => (
-        <Ticket onPlantSelect={onPlantSelect} data={item}/>
+        <Ticket onPlantSelect={onPlantSelect} onUpdateTicket={onUpdateTicket} data={item}/>
     );
 
     const renderToggleButton = () => (

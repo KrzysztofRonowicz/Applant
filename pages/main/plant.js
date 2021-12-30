@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Text, Modal, Input, Button } from '@ui-kitten/components';
-import { BackHandler, StyleSheet, View, FlatList, TouchableOpacity, Image, Dimensions, KeyboardAvoidingView } from 'react-native';
+import { BackHandler, StyleSheet, View, FlatList, TouchableOpacity, Image, Dimensions, ScrollView } from 'react-native';
 import { labels, colors, spacing, rounding } from '../../style/base';
 import { alertsImages } from '../../assets/alerts/alertsImages';
 import { Icon } from 'react-native-elements'
@@ -93,7 +93,7 @@ const RemoveModal = ({ onSubmit }) => {
     );
 }
 
-const Plant = ({plantId, onClose, onChat, status, adId, roomName, roomId}) => {
+const Plant = ({plantId, onClose, status, adId, ad, roomName, roomId}) => {
     const [statusPlant, setStatusPlant] = useState(status);
     const [collectionName, setCollectionName] = useState(roomName);
     const [collectionId, setCollectionId] = useState(roomId);
@@ -147,6 +147,50 @@ const Plant = ({plantId, onClose, onChat, status, adId, roomName, roomId}) => {
         setCategoryVisible(!categoryVisible);
     }
 
+    async function removeAd() {
+        try {
+            const response = await API.removeAd(plantId, {
+                headers: {
+                    'auth-token': await AsyncStorage.getItem('auth-token')
+                }
+            });
+            if (response.status === 200) {
+                try {
+                    await API.removeAllConversations(response.data.ad_id, {
+                        headers: {
+                            'auth-token': await AsyncStorage.getItem('auth-token')
+                        }
+                    });
+                    getPlant();
+                } catch (error) {
+                    if (error.response.status === 400) {
+                        console.log(error.response.status);
+                    }
+                }
+            }
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
+    }
+
+    async function updatePlant() {
+        let tmpResponseData = responseData;
+        tmpResponseData.name = plantName;
+        try {
+            await API.updateUserPlant(plantId, tmpResponseData, {
+                headers: {
+                    'auth-token': await AsyncStorage.getItem('auth-token')
+                }
+            })
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
+    }
+
     async function getPlant() {
         try {
             let response;
@@ -184,6 +228,9 @@ const Plant = ({plantId, onClose, onChat, status, adId, roomName, roomId}) => {
         let tmpPlant = responseData;
         tmpPlant.user_id = await AsyncStorage.getItem('user_id');
         tmpPlant.status = 'own';
+        for (let index = 0; index < tmpPlant.care.length - 1; index++) {
+            tmpPlant.care[index].next_date = new Date(Date.now() + (3600 * 1000 * 24));
+        }
         delete tmpPlant._id;
         try {
             const response = await API.addPlantToUser(tmpPlant,{
@@ -206,29 +253,30 @@ const Plant = ({plantId, onClose, onChat, status, adId, roomName, roomId}) => {
                     }
                 } catch (error) {
                     if (error.response.status === 400) {
-                        console.log(error.response.status);
+                        console.log(error.response.status + '2');
                     }
                 }
             }
         } catch (error) {
             if (error.response.status === 400) {
-                console.log(error.response.status);
+                console.log(error.response.statusText);
             }
         }
     }
 
     return (
-        conversationVisible ? <Conversation ad_id={adId} owner_id={responseData.user_id} onMessageClose={onConversation}/> :
+        conversationVisible ? <Conversation ad_id={adId} ad={ad} owner_id={responseData.user_id} onMessageClose={onConversation}/> :
         <Layout style={styles.layout}>
             <Modal onBackdropPress={() => setModalVisible(false)} visible={modalVisible}>
                 {modalContent == 'sell' ? <SellModal plant_id={responseData._id} image={responseData.image} visible={onModalClose}/>:<RemoveModal/>}
             </Modal>
+                <ScrollView showsVerticalScrollIndicator={false}>
             <View style={styles.container}>
                 <View style={styles.imageContainer}>
                     <Image style={{ flex: 1, marginHorizontal: spacing.xs, borderTopRightRadius: rounding.sm, borderTopLeftRadius: rounding.sm}} source={{ uri: imageUrl}}/>
                     <TouchableOpacity
                         style={{ position: 'absolute', right: 10, width: 30, height: 30 }}
-                            onPress={() => { onClose(undefined);}}
+                            onPress={() => { updatePlant();onClose(undefined);}}
                     >
                         <Icon type='material' name='close' size={30} color={colors.grayDark} />
                     </TouchableOpacity>
@@ -246,6 +294,7 @@ const Plant = ({plantId, onClose, onChat, status, adId, roomName, roomId}) => {
                         value={plantName}
                         onChangeText={nextValue => setPlantName(nextValue)}
                         autoCorrect={false}
+                        disabled={statusPlant !== 'own' && fullAccess !== 'edit'}
                     />
                     <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
                         <Text style={{ ...labels.qsp, color: colors.grayDark }}>{responseData.species_name}</Text>
@@ -256,14 +305,16 @@ const Plant = ({plantId, onClose, onChat, status, adId, roomName, roomId}) => {
                         <PlantParameter index={indexes[2]} lightColor={colors.compostLight} darkColor={colors.compostDark} icon={'compost'}/>
                     </View>
                     {categoryVisible ? <SwitchCategory onTouchCategory={onTouchCategory} id={categorySelected} data={responseData} status={statusPlant} fullAccess={fullAccess} plantId={plantId}/> :
-                        <>
-                            <FlatList
-                                data={DATA}
-                                renderItem={renderItem}
-                                keyExtractor={item => item.id}
-                                showsVerticalScrollIndicator={false}
-                            />
-                            <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+                        <View style={{justifyContent: 'space-between', flex: 1}}>
+                            <View style={{height: 162}}>
+                                <FlatList
+                                    data={DATA}
+                                    renderItem={renderItem}
+                                    keyExtractor={item => item.id}
+                                    showsVerticalScrollIndicator={false}
+                                />
+                            </View>
+                            <View style={{flexDirection: 'row', justifyContent: 'space-between', height: 60}}>
                                 {statusPlant === 'own' || fullAccess === 'edit' ? 
                                     <TouchableOpacity style={styles.specialAction} onPress={() => { setModalContent('remove'); setModalVisible(true) }}>
                                         <Icon type='material' name='delete' size={28} color={colors.grayDark} />
@@ -277,7 +328,7 @@ const Plant = ({plantId, onClose, onChat, status, adId, roomName, roomId}) => {
                                     </TouchableOpacity>
                                 : <></>}
                                 {statusPlant === 'ad' && fullAccess === 'edit' ?
-                                    <TouchableOpacity style={styles.specialAction}>
+                                    <TouchableOpacity style={styles.specialAction} onPress={removeAd}>
                                         <Icon type='material' name='close' size={28} color={colors.grayDark} />
                                         <Text style={[styles.specialActionText, { marginLeft: spacing.xs }]}>Usuń ogłoszenie</Text>
                                     </TouchableOpacity>
@@ -295,10 +346,10 @@ const Plant = ({plantId, onClose, onChat, status, adId, roomName, roomId}) => {
                                     </TouchableOpacity>
                                 : <></>}
                             </View>
-                        </>
+                        </View>
                     }
                 </View>
-            </View>
+            </View></ScrollView>
             <Toast />
         </Layout>
     );
@@ -312,7 +363,7 @@ const styles = StyleSheet.create({
         borderTopColor: '#DCDCDC',
     },
     container: {
-        flex: 1,
+        minHeight: Dimensions.get('window').height - 100,
         alignItems: 'center',
         paddingTop: spacing.xs,
         backgroundColor: colors.appLightBackground,
@@ -324,9 +375,6 @@ const styles = StyleSheet.create({
     details: {
         alignSelf: 'stretch',
         flex: 1,
-        // marginTop: spacing.xs,
-        // borderTopWidth: 1,
-        // borderTopColor: colors.grayDark,
         backgroundColor: colors.grayBackgroundDark,
         paddingHorizontal: spacing.md,
         paddingTop: spacing.lg,
@@ -334,7 +382,6 @@ const styles = StyleSheet.create({
         marginBottom: spacing.xs,
         borderBottomLeftRadius: rounding.md,
         borderBottomRightRadius: rounding.md,
-        // borderRadius: rounding.md,
     },
     plantNameInput: {
         position: 'absolute',

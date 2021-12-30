@@ -27,9 +27,10 @@ export const getUserPlant = (_id, data) => {
 		data,
 	);
 };
-export const updateUserPlant = (_id, data) => {
+export const updateUserPlant = (_id, data, headers) => {
 	return axios.patch(URI.updateUserPlant(_id),
 		data,
+		headers
 	);
 };
 export const updateUserPlantCareParameter = (_id, care_name, data, headers) => {
@@ -51,6 +52,12 @@ export const getUserCollections = (data) => {
 };
 export const addPlantToCollection = (_id, data, headers) => {
 	return axios.put(URI.addPlantToCollection(_id),
+		data,
+		headers
+	);
+};
+export const removePlantFromCollection = (_id, data, headers) => {
+	return axios.put(URI.removePlantFromCollection(_id),
 		data,
 		headers
 	);
@@ -108,5 +115,26 @@ export const updateCollection = (_id, data, headers) => {
 	return axios.put(URI.updateCollection(_id),
 		data,
 		headers
+	);
+};
+export const updateTicket = (_id, data) => {
+	return axios.put(URI.updateTicket(_id),
+		{},
+		data
+	);
+};
+export const removeConversation = (_id, data) => {
+	return axios.delete(URI.removeConversation(_id),
+		data
+	);
+};
+export const removeAllConversations = (ad_id, data) => {
+	return axios.delete(URI.removeAllConversations(ad_id),
+		data
+	);
+};
+export const removeAd = (plant_id, data) => {
+	return axios.delete(URI.removeAd(plant_id),
+		data
 	);
 };

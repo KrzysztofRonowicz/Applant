@@ -104,6 +104,27 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
         </TouchableWithoutFeedback>
     );
 
+    const onMenuItemSelect = (index) => {
+        if (index === 2) {
+            removeConversation();
+        }
+    };
+
+    async function removeConversation() {
+        try {
+            await API.removeConversation(conversationId, {
+                headers: {
+                    'auth-token': await AsyncStorage.getItem('auth-token'),
+                }
+            });
+            onMessageClose();
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
+    }
+
     async function sendMessage() {
         scrollToTop();
         if (message.replace(/\s+/g, '').length !== 0) {
@@ -187,10 +208,10 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
                     <OverflowMenu
                         anchor={renderToggleButton}
                         visible={overflowVisible}
-                        onSelect={index => setSelectedIndex(index.row)}
+                        onSelect={index => onMenuItemSelect(index.row)}
                         onBackdropPress={() => setOverflowVisible(false)}>
                         <MenuItem title='Szczegóły' />
-                        <MenuItem title='Kopiuj profil' />
+                        {owner_id !== userId ? <MenuItem title='Kopiuj profil' /> : <></>}
                         <MenuItem title='Usuń konwersację' />
                     </OverflowMenu>
                 </View>
