@@ -8,6 +8,7 @@ let customFonts = {
 	'Courgette': require('../../assets/fonts/Courgette-Regular.ttf'),
     'Quicksand': require('../../assets/fonts/Quicksand-Medium.ttf'),
 };
+
 class Start extends Component {
     constructor() {
 		super();

@@ -35,7 +35,7 @@ const CarePlantParameter = ({ data, onModal}) => (
         </TouchableOpacity>
         <View style={styles.plantParameterIndicator}>
             <Text style={{ ...labels.qsp, marginVertical: spacing.xs }}>{data.description}</Text>
-            <IndicatorValue value={data.value} dark={alertsImagesDarkColors(data.name)} light={alertsImagesLightColors(data.name)}/>
+            <IndicatorValue value={data.name === 'fertilization' ? data.frequency * 1.8 : data.frequency *  1.5} care={true} dark={alertsImagesDarkColors(data.name)} light={alertsImagesLightColors(data.name)}/>
         </View>
     </View>
 );
@@ -50,12 +50,22 @@ const ClimatePlantParameter = ({ data, onModal }) => (
         </TouchableOpacity>
         <View style={styles.plantParameterIndicator}>
             <Text style={{ ...labels.qsp, marginVertical: spacing.xs }}>{data.description}</Text>
-            <IndicatorValue value={data.value_global} dark={alertsImagesDarkColors(data.name)} light={alertsImagesLightColors(data.name)} />
+            <IndicatorValue temperature={true} value={data.value[0].max - data.value[0].min} dark={alertsImagesDarkColors(data.name)} light={alertsImagesLightColors(data.name)} />
         </View>
     </View>
 );
 
-const IndicatorValue = ({value, dark, light}) => {
+const IndicatorValue = ({value, dark, care, temperature}) => {
+    let newValue;
+    if (care) {
+        newValue = 20 - Math.round(value * 0.66);
+    } else {
+        if (temperature) {
+            newValue = 20 - Math.round(value / 40 * 20);
+        } else {
+            newValue = 20 - Math.round(value / 100 * 20);
+        }
+    }
     let tmpArr = [];
     for (let index = 0; index < 20; index++) {
         tmpArr.push(index);
@@ -69,7 +79,7 @@ const IndicatorValue = ({value, dark, light}) => {
                         flex:1, 
                         height: 15, 
                         marginHorizontal: 2,  
-                    }, index <= value ? { backgroundColor: dark } : { borderColor: colors.appLightBackground}]}
+                    }, index <= newValue ? { backgroundColor: dark } : { borderColor: colors.appLightBackground}]}
                 >
                 </View>
             ))}
@@ -193,6 +203,27 @@ export const Care = ({ onTouchCategory, plantId, careData, status, fullAccess })
         }
     };
 
+    function sameDay(d1, d2) {
+        return d1.getFullYear() === d2.getFullYear() &&
+            d1.getMonth() === d2.getMonth() &&
+            d1.getDate() === d2.getDate();
+    }
+
+    const DayCell = ({ date }, style) => (
+        <View
+            style={[styles.dayContainer, style.container]}>
+            <Text style={style.text}>{`${date.getDate()}`}</Text>
+            <View style={{ flexDirection: 'row' }}>
+            {responseData.map(index => {
+                if (sameDay(new Date(index.next_date), new Date(date))) {
+                    return (<View style={[styles.value, { backgroundColor: alertsImagesDarkColors(index.name)}]}></View>);
+                }
+            })}
+            </View>
+            
+        </View>
+    );
+
     return (
         <View style={styles.container}>
             <Modal backdropStyle={styles.backdrop} onBackdropPress={() => {setModalVisible(false)}} visible={modalVisible}>
@@ -215,15 +246,15 @@ export const Care = ({ onTouchCategory, plantId, careData, status, fullAccess })
                         style={styles.datepicker}
                         dateService={localeDateService}
                         date={datepicker}
-                        min={now}
+                        min={tomorrow}
                         max={yearLater}
                         onSelect={nextDate => { setDatepicker(nextDate); createUpdateRequest(nextDate)}}
                         disabled={status === 'wiki' || fullAccess === 'view'}
                     />
                     <View style={{flex: 1, flexDirection: 'row', marginTop: spacing.sm}}>
-                        <Button onPress={() => setModalVisible(false)} style={{ flex: 1, marginRight: spacing.xs }} disabled={!selectedParameter.modified || status === 'wiki' || fullAccess === 'view'}>
+                        {/* <Button onPress={() => setModalVisible(false)} style={{ flex: 1, marginRight: spacing.xs }} disabled={!selectedParameter.modified || status === 'wiki' || fullAccess === 'view'}>
                             PRZYWRÓĆ
-                        </Button>
+                        </Button> */}
                         <Button onPress={() => updatePlant()} style={{ flex: 1, marginLeft: spacing.xs }} disabled={saveDisabled || status === 'wiki' || fullAccess === 'view'}>
                             ZAPISZ
                         </Button>
@@ -249,10 +280,11 @@ export const Care = ({ onTouchCategory, plantId, careData, status, fullAccess })
                             date={date}
                             onSelect={nextDate => setDate(nextDate)}
                             dateService={localeDateService}
-                            date={datepicker}
-                            min={now}
+                            // date={datepicker}
+                            min={tomorrow}
                             max={yearLater}
-                            // renderDay={DayCell}
+                            renderDay={DayCell}
+                            
                         />
                     </ScrollView> :
                     <FlatList
@@ -296,7 +328,7 @@ export const Climate = ({ onTouchCategory, plantId, climateData, status, fullAcc
         let foundIndex = tmpRequestData.findIndex(parameter => parameter._id === selectedParameter._id);
         tmpRequestData[foundIndex].value[0].min = sliderValue[0];
         tmpRequestData[foundIndex].value[0].max = sliderValue[1];
-        tmpRequestData[foundIndex].actual_value = actualValue;
+        tmpRequestData[foundIndex].actual_value = actualValue[0];
         tmpRequestData[foundIndex].modified = true;
         setRequestData(tmpRequestData);
     }
@@ -335,7 +367,7 @@ export const Climate = ({ onTouchCategory, plantId, climateData, status, fullAcc
             let foundIndex = requestData.findIndex(parameter => parameter._id === selectedParameter._id);
             let request = requestData[foundIndex];
             if (status === 'own' || status === 'ad') {
-                response = await API.updateUserPlantClimateParameter(plantId, requestData[foundIndex].name,
+                const response = await API.updateUserPlantClimateParameter(plantId, requestData[foundIndex].name,
                     request,
                     {
                         headers: {
@@ -344,9 +376,11 @@ export const Climate = ({ onTouchCategory, plantId, climateData, status, fullAcc
                         }
                     }
                 );
+                if (response.status === 200) {
+                    getPlant();
+                    setModalVisible(false);
+                }
             }
-            getPlant();
-            setModalVisible(false);
         } catch (error) {
             if (error.response.status === 400) {
                 console.log(error.response.status);
@@ -367,7 +401,7 @@ export const Climate = ({ onTouchCategory, plantId, climateData, status, fullAcc
                         value={sliderValue}
                         onValueChange={value => { setSliderValue(value); createUpdateRequest()}}
                         minimumValue={0}
-                        maximumValue={100}
+                        maximumValue={selectedParameter.name === 'light' ? 100 : 40}
                         step={1}
                         disabled={status === 'wiki' || fullAccess === 'view'}
                     />
@@ -376,14 +410,14 @@ export const Climate = ({ onTouchCategory, plantId, climateData, status, fullAcc
                         value={actualValue}
                         onValueChange={value => { setActualValue(value); createUpdateRequest()}}
                         minimumValue={0}
-                        maximumValue={100}
+                        maximumValue={selectedParameter.name === 'light' ? 100 : 40}
                         step={1}
                         disabled={status === 'wiki' || fullAccess === 'view'}
                     />
                     <View style={{ flex: 1, flexDirection: 'row', marginTop: spacing.sm }}>
-                        <Button onPress={() => setModalVisible(false)} style={{ flex: 1, marginRight: spacing.xs }} disabled={!selectedParameter.modified || status === 'wiki' || fullAccess === 'view'}>
+                        {/* <Button onPress={() => setModalVisible(false)} style={{ flex: 1, marginRight: spacing.xs }} disabled={!selectedParameter.modified || status === 'wiki' || fullAccess === 'view'}>
                             PRZYWRÓĆ
-                        </Button>
+                        </Button> */}
                         <Button onPress={() => updatePlant()} style={{ flex: 1, marginLeft: spacing.xs }} disabled={saveDisabled || status === 'wiki' || fullAccess === 'view'}>
                             ZAPISZ
                         </Button>
@@ -488,5 +522,17 @@ const styles = StyleSheet.create({
     }, 
     datepicker: {
         marginVertical: spacing.sm,
-    }
+    },
+    dayContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        aspectRatio: 1,
+    },
+    value: {
+        marginHorizontal: 2,
+        width: 5,
+        height: 5,
+        borderRadius: rounding.sm,
+    },
 });

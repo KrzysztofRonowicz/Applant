@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { TouchableWithoutFeedback, StyleSheet, View, Image, Keyboard, BackHandler, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as API from '../../api/apiMethods';
-import { Layout, Text, Icon, Input, Button, CheckBox } from '@ui-kitten/components';
+import { Layout, Text, Icon, Input, Button, CheckBox, Tooltip } from '@ui-kitten/components';
 import Board from '../main/board';
 
 const AlertIcon = (props) => (
@@ -10,6 +10,7 @@ const AlertIcon = (props) => (
 );
 
 const Registration = ({navigation}) => {
+    const [tooltipVisible, setTooltipVisible] = useState(false);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -39,6 +40,14 @@ const Registration = ({navigation}) => {
             <Icon {...props} name={'email'}/>
         </View>
     );
+
+    const TermsNoteButton = () => {
+        return (
+            <TouchableOpacity style={{ marginBottom: 15 }} onPress={() => setTooltipVisible(true)}>
+                <Text style={{ color: 'grey', fontWeight: 'bold' }}>Warunki użytkowania  </Text>
+            </TouchableOpacity>
+        );
+    }
 
     const renderNameCaption = () => {
         return (
@@ -90,19 +99,19 @@ const Registration = ({navigation}) => {
     return(
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
             <Layout style={{flex: 1, justifyContent: 'center', backgroundColor: '#25523B',}}>
-                <Image 
-                    source={require('../../assets/background1.png')} 
+                <Image
+                    source={require('../../assets/background1.png')}
                     style={{
-                        position: 'absolute', 
-                        // resizeMode: 'cover',
+                        position: 'absolute',
+                        width: '100%',
+                        height: '100%',
                     }}
                 />
-                <View style={{position: 'absolute', backgroundColor: '#18241b', width: '100%', height: '100%', opacity: .2}}></View>
                 <TouchableOpacity style={{position: 'absolute', left: 20, top: 40}} onPress={() => navigation.navigate('Login')}>
                     <Icon fill='white' name={'arrow-back'} style={{width: 35, height:35}}/>
                 </TouchableOpacity>
-                <Text style={{color: 'white', fontSize: 50, fontFamily: 'Quicksand', alignSelf: 'center', marginBottom: 20}}>Witaj!</Text>
-                <Text style={{color: 'white', fontSize: 20, fontFamily: 'Quicksand', alignSelf: 'center'}}>Zarejestruj się a Applant</Text>
+                <Text style={{color: 'black', fontSize: 50, fontFamily: 'Quicksand', alignSelf: 'center', marginBottom: 20}}>Witaj!</Text>
+                <Text style={{color: 'black', fontSize: 20, fontFamily: 'Quicksand', alignSelf: 'center'}}>Zarejestruj się w Applant</Text>
                 <View 
                 style={{
                     marginHorizontal: 20, 
@@ -112,6 +121,7 @@ const Registration = ({navigation}) => {
                     paddingVertical: 30,
                     marginVertical: 70,
                     borderRadius: 10,
+                    elevation: 20,
                 }}
                 >
                     <Input
@@ -143,9 +153,13 @@ const Registration = ({navigation}) => {
                         style={{marginBottom: errorPath === 'password' ? 0 : 18}}
                     />
                     <View style={{alignSelf: 'flex-end', flexDirection: 'row'}}>
-                        <TouchableOpacity style={{marginBottom: 15}}>
-                            <Text style={{color: 'grey', fontWeight: 'bold'}}>Warunki użytkowania  </Text>
-                        </TouchableOpacity>
+                        <Tooltip
+                            anchor={TermsNoteButton}
+                            visible={tooltipVisible}
+                            onBackdropPress={() => setTooltipVisible(false)}>
+                            Dostępne wkrótce!
+                        </Tooltip>
+                        
                         <CheckBox
                             style={{width: 20, height: 20, marginRight: 5}}
                             checked={termsChecked}
@@ -155,9 +169,26 @@ const Registration = ({navigation}) => {
                     <Button disabled={!termsChecked} onPress={() => connect()}>ZAREJESTRUJ</Button>
                 </View>
                 <View style={{bottom: 20, position: 'absolute', flexDirection: 'row', alignSelf: 'center'}}>
-                    <Text style={{fontSize: 17, color: '#F1F1F1', fontFamily: 'Quicksand'}}> Posiadasz konto? </Text> 
+                    <Text style={{
+                        padding: 3,
+                        backgroundColor: 'rgba(245,245,245, 0.5)',
+                        borderTopLeftRadius: 5,
+                        borderBottomLeftRadius: 5,
+                        fontSize: 17, 
+                        color: 'black', 
+                        fontFamily: 'Quicksand'
+                    }}> Posiadasz konto? </Text> 
                     <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                        <Text style={{fontWeight:'bold', fontSize: 17, color: '#F1F1F1', fontFamily: 'Quicksand'}}>Zaloguj się</Text>
+                        <Text style={{
+                            padding: 3,
+                            backgroundColor: 'rgba(245,245,245, 0.5)',
+                            borderTopRightRadius: 5,
+                            borderBottomRightRadius: 5,
+                            fontWeight:'bold', 
+                            fontSize: 17, 
+                            color: 'black', 
+                            fontFamily: 'Quicksand'
+                        }}>Zaloguj się</Text>
                     </TouchableOpacity> 
                 </View>
             </Layout>

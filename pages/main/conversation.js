@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Layout, Text, Input, OverflowMenu, MenuItem } from '@ui-kitten/components';
+import { Layout, Text, Input, OverflowMenu, MenuItem, Modal } from '@ui-kitten/components';
 import { BackHandler, StyleSheet, FlatList, View, TouchableOpacity, TouchableWithoutFeedback, Keyboard, Dimensions, Image } from 'react-native';
 import { colors, labels, rounding, spacing } from '../../style/base';
 import { Icon } from 'react-native-elements';
+import Plant from './plant';
+import { AdToCollectionModal } from './plant';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as API from '../../api/apiMethods';
 
@@ -45,6 +47,12 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
     const [overflowVisible, setOverflowVisible] = useState(false);
     const [clearVisible, setClearVisible] = useState(false);
     const [message, setMessage] = useState('');
+    const [plantVisible, setPlantVisible] = useState(false);
+
+    const [collectionModalVisible, setCollectionModalVisible] = useState(false);
+    const [collections, setCollections] = useState([]);
+    const [newPlantId, setNewPlantId] = useState(undefined);
+
     const [messages, setMessages] = useState([]);
 
     const [selectedIndex, setSelectedIndex] = useState(null);
@@ -52,6 +60,7 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
     const flatListRef = useRef();
 
     useEffect(() => {
+        getCollections();
         getUser();
         getMessages();
         let intervalId = setInterval(() => {
@@ -70,6 +79,79 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
             clearInterval(intervalId);
         };
     }, []);
+
+    const onModalClose = () => {
+        setCollectionModalVisible(false);
+    }
+
+    const onPlantDetails = () => {
+        setPlantVisible(!plantVisible);
+    };
+
+    async function getCollections() {
+        try {
+            const response = await API.getUserCollections({
+                headers: {
+                    'auth-token': await AsyncStorage.getItem('auth-token'),
+                    'user_id': await AsyncStorage.getItem('user_id')
+                }
+            });
+
+            if (response.status === 200) {
+                if (response.data[0]) {
+                    setCollections(response.data);
+                } else {
+                    try {
+                        await addCollection();
+                    } catch (error) {
+                        console.log(error);
+                    }
+                }
+            }
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
+    }
+
+    async function addCollection() {
+        try {
+            await API.addCollection({ name: 'Nowe rośliny' }, {
+                headers: {
+                    'auth-token': await AsyncStorage.getItem('auth-token'),
+                    'user_id': await AsyncStorage.getItem('user_id')
+                }
+            });
+            if (response.status === 200) {
+                let responseData = response.data;
+                setCollections(data => [...data, responseData]);
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    async function addPlantToUser() {
+        console.log('trying copy');
+        try {
+            const response = await API.copyUserPlant(ad.plant_id, {
+                headers: {
+                    'auth-token': await AsyncStorage.getItem('auth-token'),
+                    'user_id': await AsyncStorage.getItem('user_id')
+                }
+            });
+            if (response.status === 200) {
+                console.log('copied');
+                setNewPlantId(response.data.userPlant);
+                setCollectionModalVisible(true);
+            }
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.statusText);
+            }
+        }
+    }
 
     async function getUser() {
         try {
@@ -105,6 +187,13 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
     );
 
     const onMenuItemSelect = (index) => {
+        setOverflowVisible(false);
+        if (index === 0) {
+            onPlantDetails();
+        }
+        if (index === 1) {
+            addPlantToUser();
+        }
         if (index === 2) {
             removeConversation();
         }
@@ -191,7 +280,11 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
     }
 
     return(
+        plantVisible ? <Plant onClose={onPlantDetails} plantId={ad.plant_id} status={'ad'} label={true}/> :
         <Layout style={styles.layout}>
+            <Modal onBackdropPress={() => setCollectionModalVisible(false)} visible={collectionModalVisible}>
+                <AdToCollectionModal plantId={newPlantId} collections={collections} onClose={onModalClose} />
+            </Modal>
             <View style={styles.adContainer}>
                 <TouchableOpacity
                     style={{ justifyContent: 'center', aspectRatio: 1 }}
@@ -211,7 +304,7 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
                         onSelect={index => onMenuItemSelect(index.row)}
                         onBackdropPress={() => setOverflowVisible(false)}>
                         <MenuItem title='Szczegóły' />
-                        {owner_id !== userId ? <MenuItem title='Kopiuj profil' /> : <></>}
+                        {owner_id !== userId ? <MenuItem title='Kopiuj profil'/> : <></>}
                         <MenuItem title='Usuń konwersację' />
                     </OverflowMenu>
                 </View>

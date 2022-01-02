@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Text, MenuItem, OverflowMenu } from '@ui-kitten/components';
+import { Layout, Text, MenuItem, OverflowMenu, Tooltip  } from '@ui-kitten/components';
 import { BackHandler, StyleSheet, View, FlatList, TouchableOpacity, Image, Vibration } from 'react-native';
 import { labels, colors, spacing, rounding } from '../../style/base';
 import { alertsImages, alertsImagesDarkColors } from '../../assets/alerts/alertsImages';
@@ -8,6 +8,7 @@ import Plant from './plant';
 import Conversation from './conversation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as API from '../../api/apiMethods';
+import { LoadingScreen } from './board';
 
 const getImageUrl = (id) => {
     return 'https://drive.google.com/uc?id=' + id;
@@ -70,6 +71,7 @@ const Ticket = ({ data, onMessageSelect, user_id }) => (
 )
 
 const Chat = ({ navigation }) => {
+    const [isLoading, setIsLoading] = useState(false);
     const [userId, setUserId] = useState(undefined);
     const [selectedIndex, setSelectedIndex] = useState(null);
     const [visible, setVisible] = useState(false);
@@ -96,6 +98,7 @@ const Chat = ({ navigation }) => {
     };
 
     const onMessageClose = () => {
+        setResponseData([]);
         getPrefixMessages();
         setMessageVisible(!messageVisible);
     }
@@ -115,6 +118,7 @@ const Chat = ({ navigation }) => {
     }
 
     async function getPrefixMessages(){
+        setIsLoading(true);
         try {
             const response = await API.getPrefixMessages({
                 headers: {
@@ -124,6 +128,7 @@ const Chat = ({ navigation }) => {
             });
             if (response.status === 200) {
                 setResponseData(response.data);
+                setIsLoading(false);
             }
         } catch (error) {
             console.log(error);
@@ -151,24 +156,27 @@ const Chat = ({ navigation }) => {
             <Layout style={styles.layout}>
                 <View style={styles.header}>
                     <Text style={styles.title}>Wiadomości</Text>
-                    <OverflowMenu
-                        style={styles.overflowMenu}
+                    <Tooltip
                         anchor={renderToggleButton}
                         visible={visible}
-                        selectedIndex={selectedIndex}
-                        onSelect={onItemSelect}
                         onBackdropPress={() => setVisible(false)}>
-                        <MenuItem title='Środa (03.11)' />
-                        <MenuItem title='Czwartek (04.11)' />
-                        <MenuItem title='Piątek (05.11)' />
-                    </OverflowMenu>
+                        Dostępne wkrótce!
+                    </Tooltip>
                 </View>
+                {isLoading ? <LoadingScreen/>: 
                 <FlatList
                     data={responseData}
                     renderItem={renderItem}
                     keyExtractor={item => item.message[0].conversation_id}
                     showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                        <View style={{ justifyContent: 'center', flex: 1, alignItems: 'center' }}>
+                            <Text style={{ ...labels.qsp, fontWeight: 'bold', textAlign: 'center' }}>Twoja skrzynka jest pusta</Text>
+                            <Text style={{ ...labels.qsp, textAlign: 'center' }}>Zamieść lub wyszukaj ogłoszenie i nawiąż kontakt</Text>
+                        </View>}
+                    contentContainerStyle={{ flexGrow: 1 }}
                 />
+                }
             </Layout>
     );
 }

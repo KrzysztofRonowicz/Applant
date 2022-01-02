@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Text, Input, MenuItem, OverflowMenu, CheckBox, Toggle, Radio } from '@ui-kitten/components';
+import { Layout, Text, Input, MenuItem, OverflowMenu, CheckBox, Toggle, Radio, Tooltip } from '@ui-kitten/components';
 import { Icon } from 'react-native-elements'
 import Plant from './plant';
 import { BackHandler, StyleSheet, TouchableOpacity, View, FlatList, Dimensions, Image } from 'react-native';
@@ -43,7 +43,7 @@ const Search = ({route, navigation}) => {
     const [visibleSort, setVisibleSort] = useState(false);
     const [filters, setFilters] = useState(null);
     const [sort, setSort] = useState(null);
-    const [marketVisible, setMarketVisible] = useState(true);
+    const [marketVisible, setMarketVisible] = useState(false);
     const [selectedPlant, setSelectedPlant] = useState([]);
     const [plantVisible, setPlantVisible] = useState(false);
 
@@ -51,6 +51,11 @@ const Search = ({route, navigation}) => {
 
     const [responseData, setResponseData] = useState([]);
     const [responseMarketData, setResponseMarketData] = useState([]);
+
+    useEffect(() => {
+        searchPlant(inputValue);
+        searchMarketPlant(inputValue);
+    }, [marketVisible]);
 
     const onFilterSelect = (index) => {
         setFilters(index);
@@ -185,7 +190,7 @@ const Search = ({route, navigation}) => {
                 <View style={{flexDirection: 'row'}}>
                     <View style={styles.filterSort}>
                         <Text style={styles.filterSortLabel}>Filtruj</Text>
-                        <OverflowMenu
+                        {/* <OverflowMenu
                             anchor={filterButon}
                             visible={visibleFilters}
                             selectedIndex={filters}
@@ -194,11 +199,17 @@ const Search = ({route, navigation}) => {
                             <MenuItem title='Users' />
                             <MenuItem title='Orders' />
                             <MenuItem title='Transactions' />
-                        </OverflowMenu>
+                        </OverflowMenu> */}
+                            <Tooltip
+                                anchor={filterButon}
+                                visible={visibleFilters}
+                                onBackdropPress={() => setVisibleFilters(false)}>
+                                Dostępne wkrótce!
+                            </Tooltip>
                     </View>
                     <View style={styles.filterSort}>
                         <Text style={styles.filterSortLabel}>Sortuj</Text>
-                        <OverflowMenu
+                        {/* <OverflowMenu
                             anchor={sortButon}
                             visible={visibleSort}
                             selectedIndex={sort}
@@ -207,7 +218,13 @@ const Search = ({route, navigation}) => {
                             <MenuItem title='Users' />
                             <MenuItem title='Orders' />
                             <MenuItem title='Transactions' />
-                        </OverflowMenu>
+                        </OverflowMenu> */}
+                            <Tooltip
+                                anchor={sortButon}
+                                visible={visibleSort}
+                                onBackdropPress={() => setVisibleSort(false)}>
+                                Dostępne wkrótce!
+                            </Tooltip>
                     </View>
                 </View> 
             </View>
@@ -218,6 +235,12 @@ const Search = ({route, navigation}) => {
                 columnWrapperStyle={{justifyContent: 'space-between'}}
                 keyExtractor={item => item._id}
                 showsVerticalScrollIndicator={false}
+                ListEmptyComponent={
+                    <View style={{ justifyContent: 'center', flex: 1, alignItems: 'center' }}>
+                        <Text style={{ ...labels.qsp, fontWeight: 'bold' }}>Nie znaleziono :(</Text>
+                        <Text style={{ ...labels.qsp }}>Spróbuj innej nazwy</Text>
+                    </View>}
+                contentContainerStyle={{ flexGrow: 1 }}
             />
         </Layout>
     ); 

@@ -7,6 +7,7 @@ import { Icon } from 'react-native-elements'
 import Plant from './plant';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as API from '../../api/apiMethods';
+import { LoadingScreen } from './board';
 
 const getImageUrl = (id) => {
     return 'https://drive.google.com/uc?id=' + id;
@@ -176,6 +177,7 @@ const CollectionModal = ({ collectionName, collectionId, collectionPlantCount, o
 }
 
 const Collections = ({navigation}) => {
+    const [isLoading, setIsLoading] = useState(false);
     const [selectedPlant, setSelectedPlant] = useState(undefined);
     const [collectionId, setCollectionId] = useState(undefined);
     const [collectionName, setCollectionName] = useState(undefined);
@@ -186,6 +188,7 @@ const Collections = ({navigation}) => {
     const [collections, setCollections] = useState([]);
 
     useEffect(() => {
+        setIsLoading(true);
         const unsubscribe = navigation.addListener('focus', () => {
             getCollections();
         });
@@ -312,6 +315,7 @@ const Collections = ({navigation}) => {
                 } else {
                     setCollections(response.data);
                 }
+                setIsLoading(false);
             }
         } catch (error) {
             if (error.response.status === 400) {
@@ -336,12 +340,21 @@ const Collections = ({navigation}) => {
                     <Text style={styles.title}>Moje rośliny</Text>
                     <AddButton onPress={setModal} name={'add-circle'} />
                 </View>
+                {isLoading ? <LoadingScreen/> : 
                 <FlatList
                     data={collections}
                     renderItem={renderItem}
                     keyExtractor={item => item._id}
                     showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                        <View style={{ justifyContent: 'center', flex: 1, alignItems: 'center' }}>
+                            <Text style={{ ...labels.qsp, fontWeight: 'bold' }}>Nie posiadasz żadnej kolekcji roślin</Text>
+                            <Text style={{ ...labels.qsp }}>Utwórz kolekcję za pomocą </Text>
+                            <Icon type='material' name={'add-circle'} size={20} color={colors.greenLight} style={{marginTop: 10}}/>
+                        </View>}
+                    contentContainerStyle={{ flexGrow: 1 }}
                 />
+                }
             </Layout>
             }
         </TouchableWithoutFeedback>

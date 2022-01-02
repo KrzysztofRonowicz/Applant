@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Text, MenuItem, OverflowMenu } from '@ui-kitten/components';
+import { Layout, Text, MenuItem, OverflowMenu, Spinner } from '@ui-kitten/components';
 import { BackHandler, StyleSheet, View, FlatList, TouchableOpacity, Image } from 'react-native';
 import {labels, colors, spacing, rounding} from '../../style/base';
 import { alertsImages, alertsImagesDarkColors } from '../../assets/alerts/alertsImages';
@@ -11,6 +11,15 @@ import * as API from '../../api/apiMethods';
 const getImageUrl = (id) => {
     return 'https://drive.google.com/uc?id=' + id;
 };
+
+export const LoadingScreen = (text) => {
+    return(
+        <View style={styles.loadingScreen}>
+            <Text style={{...labels.qsm, color: colors.greenDark, marginBottom: spacing.md}}>Trwa ładowanie</Text>
+            <Spinner size={'giant'} />
+        </View>
+    );
+}
 
 const PrintDate = ({dateString}) => {
     let date = new Date(dateString);
@@ -72,6 +81,7 @@ const Ticket = ({data, onPlantSelect, onUpdateTicket}) => (
 )
 
 const Board = ({navigation}) => {
+    const [isLoading, setIsLoading] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(null);
     const [visible, setVisible] = useState(false);
     const [selectedPlant, setSelectedPlant] = useState(undefined);
@@ -82,16 +92,17 @@ const Board = ({navigation}) => {
 
     useEffect(() => {
         const unsubscribe = navigation.addListener('focus', () => {
-            getTickets();
+            getTickets(0);
         });
 
         // Return the function to unsubscribe from the event so it gets removed on unmount
         return unsubscribe;
     }, [navigation]);
 
-    async function getTickets() {
+    async function getTickets(days_ahead) {
+        setIsLoading(true);
         try {
-            const response = await API.getTickets({
+            const response = await API.getTickets(days_ahead, {
                 headers: {
                     'auth-token': await AsyncStorage.getItem('auth-token'),
                     'user_id': await AsyncStorage.getItem('user_id')
@@ -99,8 +110,10 @@ const Board = ({navigation}) => {
             });
             if (response.status === 200) {
                 setResponse(response.data);
+                setIsLoading(false);
             }
         } catch (error) {
+            setIsLoading(false);
             if (error.response.status === 400) {
                 console.log(error.response.status);
             }
@@ -116,7 +129,7 @@ const Board = ({navigation}) => {
             });
             if (response.status === 200) {
                 setTimeout(() => {
-                    getTickets();
+                    getTickets(0);
                 }, 1000);
             }
         } catch (error) {
@@ -146,6 +159,19 @@ const Board = ({navigation}) => {
         setVisible(false);
     };
 
+    const onMenuItemSelect = (index) => {
+        setVisible(false);
+        if (index === 0) {
+            getTickets(0);
+        }
+        if (index === 1) {
+            getTickets(1);
+        }
+        if (index === 2) {
+            getTickets(2);
+        }
+    };
+
     const renderItem = ({ item }) => (
         <Ticket onPlantSelect={onPlantSelect} onUpdateTicket={onUpdateTicket} data={item}/>
     );
@@ -166,20 +192,28 @@ const Board = ({navigation}) => {
                     style={styles.overflowMenu}
                     anchor={renderToggleButton}
                     visible={visible}
-                    selectedIndex={selectedIndex}
-                    onSelect={onItemSelect}
+                    onSelect={index => onMenuItemSelect(index.row)}
                     onBackdropPress={() => setVisible(false)}>
-                    <MenuItem title='Środa (03.11)' />
-                    <MenuItem title='Czwartek (04.11)' />
-                    <MenuItem title='Piątek (05.11)' />
+                    <MenuItem title='Dzisiaj' />
+                    <MenuItem title='Jutro' />
+                    <MenuItem title='Pojutrze' />
                 </OverflowMenu>
             </View>
+            {isLoading ? 
+            <LoadingScreen/> : 
             <FlatList
                 data={response}
                 renderItem={renderItem}
                 keyExtractor={item => item._id}
                 showsVerticalScrollIndicator={false}
+                ListEmptyComponent={
+                <View style={{justifyContent: 'center', flex: 1, alignItems: 'center'}}>
+                    <Text style={{...labels.qsp, fontWeight: 'bold'}}>Na dziś to wszystko!</Text>
+                    <Text style={{...labels.qsp}}>Twoje rośliny niczego nie potrzebują :) </Text>
+                </View>}
+                contentContainerStyle={{ flexGrow: 1 }}
             />
+            }
         </Layout>
     );
 }
@@ -256,6 +290,12 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         resizeMode: 'cover',
     },
+    loadingScreen: {
+        flex: 1,
+        backgroundColor: colors.appLightBackground,
+        justifyContent: 'center',
+        alignItems: 'center',
+    }
 });
 
 export default Board;

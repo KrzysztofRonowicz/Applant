@@ -16,10 +16,12 @@ export const plant = (_id) => `${plantUri}/?_id=${_id}`;
 export const searchPlants = (species_name) => `${plantUri}/search?species_name=${species_name}`;
 
 export const userPlant = (_id) => `${userPlantUri}/?_id=${_id}`;
+export const copyUserPlant = (plant_id) => `${userPlantUri}/copy?plant_id=${plant_id}`;
 export const addUserPlant = `${userPlantUri}/add`;
 export const updateUserPlant = (_id) => `${userPlantUri}/update?_id=${_id}`;
 export const updateUserPlantCareParameter = (_id, care_name) => `${userPlantUri}/update/careparameter?_id=${_id}&care_name=${care_name}`;
 export const updateUserPlantClimateParameter = (_id, climate_name) => `${userPlantUri}/update/climateparameter?_id=${_id}&climate_name=${climate_name}`;
+export const removeUserPlant = (_id) => `${userPlantUri}/remove?_id=${_id}`;
 
 export const collections = `${collectionsUri}/`;
 export const addCollection = `${collectionsUri}/add`;
@@ -28,7 +30,7 @@ export const updateCollection = (_id) => `${collectionsUri}/update?_id=${_id}`;
 export const addPlantToCollection = (_id) => `${collectionsUri}/plantadd?_id=${_id}`;
 export const removePlantFromCollection = (_id) => `${collectionsUri}/plantremove?_id=${_id}`;
 
-export const tickets = `${ticketUri}/`;
+export const tickets = (days_ahead) => `${ticketUri}/?days_ahead=${days_ahead}`;
 export const addTicket = `${ticketUri}/add`;
 export const updateTicket = (_id) => `${ticketUri}/update?_id=${_id}`;
 export const removeAllTickets = (plant_id) => `${ticketUri}/remove?plant_id=${plant_id}`;

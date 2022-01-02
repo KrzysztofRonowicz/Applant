@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { TouchableWithoutFeedback, StyleSheet, View, Image, Keyboard, BackHandler, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as API from '../../api/apiMethods';
-import { Layout, Text, Icon, Input, Button } from '@ui-kitten/components';
+import { Layout, Text, Icon, Input, Button, Tooltip } from '@ui-kitten/components';
 import Board from '../main/board';
 import { AppContext } from '../../context';
 
@@ -11,6 +11,7 @@ const AlertIcon = (props) => (
 );
 
 const Login = ({navigation}) => {
+    const [tooltipVisible, setTooltipVisible] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
@@ -62,6 +63,14 @@ const Login = ({navigation}) => {
         )
     }
 
+    const ForgotPasswordButton = () => {
+        return(
+            <TouchableOpacity style={{ alignSelf: 'flex-end', marginBottom: 15 }} onPress={() => setTooltipVisible(true)}>
+                <Text style={{ color: 'grey' }}>Zapomniałeś hasła?</Text>
+            </TouchableOpacity>
+        );
+    }
+
     async function connect(){
         Keyboard.dismiss();
         try {
@@ -71,10 +80,12 @@ const Login = ({navigation}) => {
             });
             if (response.status === 200) {
                 setErrorPath(''),
+                console.log(response.data['user_name']);
                 AsyncStorage.setItem('auth-token', response.headers['auth-token']);
                 AsyncStorage.setItem('user_id', response.data['user_id']);
+                AsyncStorage.setItem('user_name', response.data['user_name']);
+                AsyncStorage.setItem('user_email', response.data['user_email']);
                 context.setLoginState(true);
-                console.log(response.data['user_id']);
 			}
         } catch (error) {
             if (error.response.status === 400) {
@@ -101,8 +112,8 @@ const Login = ({navigation}) => {
                 <TouchableOpacity style={{position: 'absolute', right: 20, top: 40}}  onPress={() => navigation.navigate('Registration')}>
                     <Icon fill='white' name={'arrow-forward'} style={{width: 35, height:35}}/>
                 </TouchableOpacity>
-                <Text style={{color: 'white', fontSize: 50, fontFamily: 'Quicksand', alignSelf: 'center', marginBottom: 20}}>Witaj!</Text>
-                <Text style={{color: 'white', fontSize: 20, fontFamily: 'Quicksand', alignSelf: 'center'}}>Zaloguj się na swoje konto</Text>
+                <Text style={{color: 'black', fontSize: 50, fontFamily: 'Quicksand', alignSelf: 'center', marginBottom: 20}}>Witaj!</Text>
+                <Text style={{color: 'black', fontSize: 20, fontFamily: 'Quicksand', alignSelf: 'center'}}>Zaloguj się na swoje konto</Text>
                 <View 
                 style={{
                     marginHorizontal: 20, 
@@ -112,6 +123,7 @@ const Login = ({navigation}) => {
                     paddingVertical: 30,
                     marginVertical: 70,
                     borderRadius: 10,
+                    elevation: 20,
                 }}
                 >
                     <Input
@@ -133,13 +145,35 @@ const Login = ({navigation}) => {
                         onChangeText={nextValue => setPassword(nextValue)}
                         style={{marginBottom: errorPath === 'password' ? 0 : 18}}
                     />
-                    <TouchableOpacity style={{alignSelf: 'flex-end', marginBottom: 15}}><Text style={{color: 'grey'}}>Zapomniałeś hasła?</Text></TouchableOpacity>
+                        <Tooltip
+                            anchor={ForgotPasswordButton}
+                            visible={tooltipVisible}
+                            onBackdropPress={() => setTooltipVisible(false)}>
+                            Dostępne wkrótce!
+                        </Tooltip>
                     <Button onPress={() => connect()}>ZALOGUJ</Button>
                 </View>
                 <View style={{bottom: 20, position: 'absolute', flexDirection: 'row', alignSelf: 'center'}}>
-                    <Text style={{fontSize: 17, color: '#F1F1F1', fontFamily: 'Quicksand'}}> Nie posiadasz konta? </Text> 
+                        <Text style={{ 
+                            padding: 3, 
+                            backgroundColor: 'rgba(245,245,245, 0.5)', 
+                            borderTopLeftRadius: 5, 
+                            borderBottomLeftRadius: 5, 
+                            fontSize: 17, 
+                            color: 'black', 
+                            fontFamily: 'Quicksand'
+                        }}> Nie posiadasz konta? </Text> 
                     <TouchableOpacity onPress={() => navigation.navigate('Registration')}>
-                        <Text style={{fontWeight:'bold', fontSize: 17, color: '#F1F1F1', fontFamily: 'Quicksand'}}>Zarejestruj się</Text>
+                        <Text style={{
+                            fontWeight:'bold', 
+                            fontSize: 17, 
+                            color: 'black', 
+                            fontFamily: 'Quicksand',
+                            padding: 3,
+                            backgroundColor: 'rgba(245,245,245, 0.5)',
+                            borderTopRightRadius: 5,
+                            borderBottomRightRadius: 5,
+                        }}>Zarejestruj się</Text>
                     </TouchableOpacity> 
                 </View>
             </Layout>

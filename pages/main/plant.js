@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as API from '../../api/apiMethods';
 import Toast from 'react-native-toast-message';
 import Conversation from './conversation';
+import { LoadingScreen } from './board';
 
 
 const PlantParameter = ({lightColor, darkColor, icon, index}) => {
@@ -52,6 +53,47 @@ const SwitchCategory = ({ onTouchCategory, id, data, status, plantId, fullAccess
     }
 }
 
+export const AdToCollectionModal = ({onClose, collections, plantId}) => {
+
+    async function addPlantToCollection(collectionId, plantId) {
+        try {
+            const response = await API.addPlantToCollection(collectionId,
+                { plant_id: plantId },
+                {
+                    headers: {
+                        'auth-token': await AsyncStorage.getItem('auth-token')
+                    }
+                }
+            );
+            if (response.status === 200) {
+                onClose();
+            }
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
+    }
+
+    const renderCollectionItem = ({ item }) => (
+        <TouchableOpacity style={styles.collectionButton} onPress={() => addPlantToCollection(item._id, plantId)}>
+            <Text style={styles.collectionText}>{item.name}</Text>
+        </TouchableOpacity>
+    );
+
+    return (
+        <View style={[styles.modal, { maxHeight: Dimensions.get('screen').width * 0.8}]}>
+            <Text style={{...labels.qsp, fontWeight: 'bold'}}>Dodaj do</Text>
+            <FlatList
+                data={collections}
+                renderItem={renderCollectionItem}
+                keyExtractor={item => item._id}
+                showsVerticalScrollIndicator={false}
+            />
+        </View>
+    );
+}
+
 const SellModal = ({plant_id, image, visible}) => {
     const [name, setName] = useState('');
     const [prize,setPrize] = useState(undefined);
@@ -88,22 +130,28 @@ const RemoveModal = ({ onSubmit }) => {
     return (
         <View style={styles.modal}>
             <Text style={{...labels.qsp, margin: spacing.sm, textAlign: 'center', marginBottom: spacing.md}}>Czy chcesz bezpowrotnie usunąć tę roślinę?</Text>
-            <Button status={'warning'}>Usuń</Button>
+            <Button status={'warning'} onPress={() => onSubmit()}>Usuń</Button>
         </View>
     );
 }
 
-const Plant = ({plantId, onClose, status, adId, ad, roomName, roomId}) => {
+const Plant = ({plantId, onClose, status, adId, ad, roomName, roomId, label}) => {
+    const [isLoading, setIsLoading] = useState(false);
     const [statusPlant, setStatusPlant] = useState(status);
     const [collectionName, setCollectionName] = useState(roomName);
     const [collectionId, setCollectionId] = useState(roomId);
     const [modalVisible, setModalVisible] = useState(false);
+    const [collectionModalVisible, setCollectionModalVisible] = useState(false);
     const [modalContent, setModalContent] = useState(false);
     const [conversationVisible, setConversationVisible] = useState(false);
     const [fullAccess, setFullAccess] = useState(false);
     const [plantName, setPlantName] = useState('');
     const [imageUrl, setImageUrl] = useState('');
     const [indexes, setIndexes] = useState([]);
+
+    const [newPlantId, setNewPlantId] = useState(undefined);
+
+    const [collections, setCollections] = useState([]);
 
     const [categoryVisible, setCategoryVisible] = useState(false);
     const [categorySelected, setCategorySelected] = useState(undefined);
@@ -119,11 +167,20 @@ const Plant = ({plantId, onClose, status, adId, ad, roomName, roomId}) => {
     }
 
     useEffect(() => {
+        setIsLoading(true);
+    },[]);
+
+    useEffect(() => {
+        if (!roomId && status === 'wiki') {
+            getCollections();
+        }
         getPlant();
     }, [modalVisible]);
 
     const onModalClose = () => {
+        showToast({ name: responseData.species_name });
         setModalVisible(false);
+        setCollectionModalVisible(false);
     }
 
     const onConversation = () => {
@@ -147,6 +204,54 @@ const Plant = ({plantId, onClose, status, adId, ad, roomName, roomId}) => {
         setCategoryVisible(!categoryVisible);
     }
 
+    const onRemovePlantSubmit = () => {
+        removeUserPlant();
+    }
+
+    async function getCollections() {
+        try {
+            const response = await API.getUserCollections({
+                headers: {
+                    'auth-token': await AsyncStorage.getItem('auth-token'),
+                    'user_id': await AsyncStorage.getItem('user_id')
+                }
+            });
+
+            if (response.status === 200) {
+                if (response.data[0]) {
+                    setCollections(response.data);
+                } else {
+                    try {
+                        addCollection();
+                    } catch (error) {
+                        console.log(error);
+                    }
+                }
+            }
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
+    }
+
+    async function addCollection() {
+        try {
+            const response = await API.addCollection({ name: 'Nowe rośliny' }, {
+                headers: {
+                    'auth-token': await AsyncStorage.getItem('auth-token'),
+                    'user_id': await AsyncStorage.getItem('user_id')
+                }
+            });
+            if (response.status === 200) {
+                let responseData = response.data;
+                setCollections(data => [...data, responseData]);
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
     async function removeAd() {
         try {
             const response = await API.removeAd(plantId, {
@@ -164,15 +269,41 @@ const Plant = ({plantId, onClose, status, adId, ad, roomName, roomId}) => {
                     getPlant();
                 } catch (error) {
                     if (error.response.status === 400) {
-                        console.log(error.response.status);
+                        console.log(error.response.data);
                     }
                 }
             }
         } catch (error) {
             if (error.response.status === 400) {
-                console.log(error.response.status);
+                console.log(error.response.data);
             }
         }
+    }
+
+    async function removeUserPlant() {
+        try {
+            removeAd();
+            try {
+                await API.removeUserPlant(plantId, {
+                    headers: {
+                        'auth-token': await AsyncStorage.getItem('auth-token')
+                    }
+                });
+            } catch (error) {
+                if (error.response.status === 400) {
+                    console.log(error.response.data);
+                }
+            }
+            try {
+                onClose(undefined);
+            } catch (error) {
+                console.log('on close error');
+            }
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.data);
+            }
+        };
     }
 
     async function updatePlant() {
@@ -212,23 +343,27 @@ const Plant = ({plantId, onClose, status, adId, ad, roomName, roomId}) => {
                 setFullAccess(() => response.headers['scopes']);
                 if (response.data === []) {
                     setResponseData([]);
+                    setIsLoading(false);
                 } else {
                     setResponseData(response.data);
                     setStatusPlant(response.data.status);
+                    setIsLoading(false);
                 }
+                setIsLoading(false);
             }
         } catch (error) {
             if (error.response.status === 400) {
-                console.log(error.response.status);
+                console.log('get plant error');
             }
         }
+        setIsLoading(false);
     };
 
     async function addPlantToUser() {
         let tmpPlant = responseData;
         tmpPlant.user_id = await AsyncStorage.getItem('user_id');
         tmpPlant.status = 'own';
-        for (let index = 0; index < tmpPlant.care.length - 1; index++) {
+        for (let index = 0; index < tmpPlant.care.length; index++) {
             tmpPlant.care[index].next_date = new Date(Date.now() + (3600 * 1000 * 24));
         }
         delete tmpPlant._id;
@@ -239,21 +374,26 @@ const Plant = ({plantId, onClose, status, adId, ad, roomName, roomId}) => {
                 }
             });
             if (response.status === 200) {
-                try {
-                    const response2 = await API.addPlantToCollection(collectionId, 
-                        { plant_id: response.data.userPlant },
-                        {
-                            headers: {
-                                'auth-token': await AsyncStorage.getItem('auth-token')
-                            }  
+                if (!roomId) {
+                    setNewPlantId(response.data.userPlant);
+                    setCollectionModalVisible(true);
+                } else {
+                    try {
+                        const response2 = await API.addPlantToCollection(collectionId, 
+                            { plant_id: response.data.userPlant },
+                            {
+                                headers: {
+                                    'auth-token': await AsyncStorage.getItem('auth-token')
+                                }  
+                            }
+                        );
+                        if (response2.status === 200) {
+                            showToast({ name: tmpPlant.species_name });
                         }
-                    );
-                    if (response2.status === 200) {
-                        showToast({ name: tmpPlant.species_name });
-                    }
-                } catch (error) {
-                    if (error.response.status === 400) {
-                        console.log(error.response.status + '2');
+                    } catch (error) {
+                        if (error.response.status === 400) {
+                            console.log(error.response.status + '2');
+                        }
                     }
                 }
             }
@@ -268,9 +408,13 @@ const Plant = ({plantId, onClose, status, adId, ad, roomName, roomId}) => {
         conversationVisible ? <Conversation ad_id={adId} ad={ad} owner_id={responseData.user_id} onMessageClose={onConversation}/> :
         <Layout style={styles.layout}>
             <Modal onBackdropPress={() => setModalVisible(false)} visible={modalVisible}>
-                {modalContent == 'sell' ? <SellModal plant_id={responseData._id} image={responseData.image} visible={onModalClose}/>:<RemoveModal/>}
+                {modalContent == 'sell' ? <SellModal plant_id={responseData._id} image={responseData.image} visible={onModalClose}/>:<RemoveModal onSubmit={onRemovePlantSubmit}/>}
             </Modal>
-                <ScrollView showsVerticalScrollIndicator={false}>
+            <Modal onBackdropPress={() => setCollectionModalVisible(false)} visible={collectionModalVisible}>
+                <AdToCollectionModal plantId={newPlantId} collections={collections} onClose={onModalClose}/>
+            </Modal>
+            {isLoading ? <LoadingScreen/> : 
+            <ScrollView showsVerticalScrollIndicator={false}>
             <View style={styles.container}>
                 <View style={styles.imageContainer}>
                     <Image style={{ flex: 1, marginHorizontal: spacing.xs, borderTopRightRadius: rounding.sm, borderTopLeftRadius: rounding.sm}} source={{ uri: imageUrl}}/>
@@ -294,7 +438,7 @@ const Plant = ({plantId, onClose, status, adId, ad, roomName, roomId}) => {
                         value={plantName}
                         onChangeText={nextValue => setPlantName(nextValue)}
                         autoCorrect={false}
-                        disabled={statusPlant !== 'own' && fullAccess !== 'edit'}
+                        disabled={statusPlant !== 'own' && fullAccess !== 'edit' || label}
                     />
                     <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
                         <Text style={{ ...labels.qsp, color: colors.grayDark }}>{responseData.species_name}</Text>
@@ -315,31 +459,31 @@ const Plant = ({plantId, onClose, status, adId, ad, roomName, roomId}) => {
                                 />
                             </View>
                             <View style={{flexDirection: 'row', justifyContent: 'space-between', height: 60}}>
-                                {statusPlant === 'own' || fullAccess === 'edit' ? 
+                                {statusPlant === 'own' || fullAccess === 'edit' && !label ? 
                                     <TouchableOpacity style={styles.specialAction} onPress={() => { setModalContent('remove'); setModalVisible(true) }}>
                                         <Icon type='material' name='delete' size={28} color={colors.grayDark} />
                                         <Text style={styles.specialActionText}>Usuń</Text>
                                     </TouchableOpacity>
                                 : <></>}
-                                {statusPlant === 'own' ?
+                                {statusPlant === 'own' && !label ?
                                     <TouchableOpacity style={styles.specialAction} onPress={() => {setModalContent('sell'); setModalVisible(true)}}>
                                         <Icon type='material' name='storefront' size={28} color={colors.grayDark} />
                                         <Text style={[styles.specialActionText, { marginLeft: spacing.xs }]}>Sprzedaj</Text>
                                     </TouchableOpacity>
                                 : <></>}
-                                {statusPlant === 'ad' && fullAccess === 'edit' ?
+                                {statusPlant === 'ad' && fullAccess === 'edit' && !label ?
                                     <TouchableOpacity style={styles.specialAction} onPress={removeAd}>
                                         <Icon type='material' name='close' size={28} color={colors.grayDark} />
                                         <Text style={[styles.specialActionText, { marginLeft: spacing.xs }]}>Usuń ogłoszenie</Text>
                                     </TouchableOpacity>
                                 : <></>}
-                                {statusPlant === 'ad' && fullAccess === 'view' ?
+                                {statusPlant === 'ad' && fullAccess === 'view' && !label ?
                                     <TouchableOpacity style={styles.specialAction} onPress={() => onConversation()}>
                                         <Icon type='material' name='send' size={28} color={colors.grayDark} />
                                         <Text style={[styles.specialActionText, { marginLeft: spacing.xs }]}>Wiadomość</Text>
                                     </TouchableOpacity>
                                 : <></>}
-                                {statusPlant === 'wiki' ?
+                                {statusPlant === 'wiki' && !label ?
                                     <TouchableOpacity style={styles.specialAction} onPress={() => addPlantToUser()}>
                                         <Icon type='material' name='add-circle-outline' size={28} color={colors.greenMedium} />
                                             <Text style={[styles.specialActionText, { marginLeft: spacing.xs }]}>Dodaj{collectionName ? ' do ' + collectionName : ''}</Text>
@@ -350,6 +494,7 @@ const Plant = ({plantId, onClose, status, adId, ad, roomName, roomId}) => {
                     }
                 </View>
             </View></ScrollView>
+            }
             <Toast />
         </Layout>
     );
@@ -456,6 +601,20 @@ const styles = StyleSheet.create({
         borderRadius: rounding.xs,
         elevation: 20,
     },
+    collectionButton: {
+        backgroundColor: colors.appLightBackground,
+        // borderRadius: rounding.xs,
+        borderColor: colors.grayDark,
+        marginVertical: spacing.xs,
+        paddingVertical: 2,
+        borderLeftWidth: 2,
+        borderRightWidth: 2,
+    },
+    collectionText: {
+        ...labels.qsp,
+        color: colors.grayDark,
+        textAlign: 'center'
+    }
 });
 
 export default Plant;

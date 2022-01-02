@@ -40,6 +40,7 @@ export const updateUserPlantCareParameter = (_id, care_name, data, headers) => {
 	);
 };
 export const updateUserPlantClimateParameter = (_id, climate_name, data, headers) => {
+	console.log(URI.updateUserPlantClimateParameter(_id, climate_name));
 	return axios.put(URI.updateUserPlantClimateParameter(_id, climate_name),
 		data,
 		headers
@@ -68,8 +69,13 @@ export const addPlantToUser = (data, headers) => {
 		headers
 	);
 };
-export const getTickets = (data) => {
-	return axios.get(URI.tickets,
+export const copyUserPlant = (plant_id, headers) => {
+	return axios.post(URI.copyUserPlant(plant_id),{},
+		headers
+	);
+};
+export const getTickets = (days_ahead, data) => {
+	return axios.get(URI.tickets(days_ahead),
 		data
 	);
 };
@@ -135,6 +141,11 @@ export const removeAllConversations = (ad_id, data) => {
 };
 export const removeAd = (plant_id, data) => {
 	return axios.delete(URI.removeAd(plant_id),
+		data
+	);
+};
+export const removeUserPlant = (_id, data) => {
+	return axios.delete(URI.removeUserPlant(_id),
 		data
 	);
 };

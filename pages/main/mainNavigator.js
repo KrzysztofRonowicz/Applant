@@ -14,12 +14,12 @@ const Tab = createMaterialTopTabNavigator();
 
 const HeaderMainNavigator = () => {
 	return (
-		<View style={{ height: 85, justifyContent: 'space-between', alignItems: 'flex-end', backgroundColor: '#F8F8F8', flexDirection: 'row', paddingTop: 30, paddingHorizontal: 20, paddingBottom: 5}}>
-			<Text style={{ color: '#25523B', fontSize: 30, fontFamily: 'Courgette' }}>Applant</Text>
-			{/* <Image source={require('../../assets/applant_s.png')} style={{ width: 40, height: 40, borderRadius: 5, marginLeft: 15 }} /> */}
-			<TouchableOpacity style={{ alignSelf: 'flex-end', marginBottom: 2, padding: 3, backgroundColor: '#DCDCDC', borderRadius: 20 }}>
+		<View style={{ height: 75,justifyContent: 'center', alignItems: 'flex-end', backgroundColor: 'white', flexDirection: 'row', paddingTop: 30, paddingHorizontal: 20, paddingBottom: 5}}>
+			<Image source={require('../../assets/logo2.png')} style={{ width: 40, height: 35, borderRadius: 7 }} />
+			<Text style={{ color: '#25523B', fontSize: 25, fontFamily: 'Courgette', marginLeft: 10 }}>Applant</Text>
+			{/* <TouchableOpacity style={{ alignSelf: 'flex-end', marginBottom: 2, padding: 3, backgroundColor: '#DCDCDC', borderRadius: 20 }}>
 				<Icon type='material' name='settings' color={'gray'}/>
-			</TouchableOpacity>
+			</TouchableOpacity> */}
 		</View>
 	);
 }
@@ -59,7 +59,7 @@ const MainNavigator = () => {
 								borderTopLeftRadius: 5,
 							},
 							tabBarStyle: {
-								backgroundColor: '#F8F8F8',
+								backgroundColor: 'white',
 							}
 						})}
 						style={{

@@ -1,12 +1,13 @@
 import React, { Component, useEffect, useState } from 'react';
 import { Image } from 'react-native';
 import { Layout, Text } from '@ui-kitten/components';
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Board from '../main/board';
 import MainNavigator from '../main/mainNavigator';
 import AuthorizationNavigator from './authorizationNavigator';
 import { AppContext } from '../../context';
 import { render } from 'react-dom';
+import { colors } from '../../style/base';
 
 class Hello extends React.Component {
     constructor() {
@@ -27,6 +28,8 @@ class Hello extends React.Component {
         try {
             await AsyncStorage.removeItem('auth-token');
             await AsyncStorage.removeItem('user_id');
+            await AsyncStorage.removeItem('user_name');
+            await AsyncStorage.removeItem('user_email');
             return true;
         } catch (error) {
             setTimeout(()=>navigation.navigate('Login') , 1000);
@@ -58,9 +61,9 @@ class Hello extends React.Component {
                         this.state.isLogged ? (<MainNavigator />) : (<AuthorizationNavigator />)
                    
                     :
-                    <Layout style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#25523B', flexDirection: 'row' }}>
-                        <Image source={require('../../assets/applant_s.png')} style={{ width: 60, height: 60, borderRadius: 10, marginRight: 20 }} />
-                        <Text style={{ color: 'white', fontSize: 50, fontFamily: 'Courgette' }}>Applant</Text>
+                    <Layout style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white', flexDirection: 'row' }}>
+                        <Image source={require('../../assets/logo2.png')} style={{ width: 69, height: 60, borderRadius: 10, marginRight: 20 }} />
+                        <Text style={{ color: colors.greenDark, fontSize: 50, fontFamily: 'Courgette' }}>Applant</Text>
                     </Layout>
                 }
             
