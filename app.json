@@ -5,8 +5,45 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo2cropped.png",
+    "splash": {
+      "image": "./assets/logo2cropped.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
     "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo2cropped.png",
+        "backgroundColor": "#FFFFFF"
+      },
       "package": "com.applant"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     }
+  },
+   "build": {
+    "preview": {
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "preview2": {
+      "android": {
+        "gradleCommand": ":app:assembleRelease"
+      }
+    },
+    "preview3": {
+      "developmentClient": true
+    },
+    "production": {}
   }
 }

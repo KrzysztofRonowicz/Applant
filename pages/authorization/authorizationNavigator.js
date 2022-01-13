@@ -1,6 +1,6 @@
 import *as React from 'react';
 import { createStackNavigator, TransitionPresets }from '@react-navigation/stack';
-import { NavigationContainer }from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import Login from './login';
 import Registration from './registration';
 // import Hello from './hello';

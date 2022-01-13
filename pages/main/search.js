@@ -162,6 +162,7 @@ const Search = ({route, navigation}) => {
                 roomName={collection_name}
                 roomId={collection_id}
                 ad={{
+                    plant_id: selectedPlant[0],
                     _id: selectedPlant[1],
                     name: selectedPlant[2],
                     prize: selectedPlant[3],

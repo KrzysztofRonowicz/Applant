@@ -51,7 +51,7 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
 
     const [collectionModalVisible, setCollectionModalVisible] = useState(false);
     const [collections, setCollections] = useState([]);
-    const [newPlantId, setNewPlantId] = useState(undefined);
+    const [newPlantId, setNewPlantId] = useState();
 
     const [messages, setMessages] = useState([]);
 
@@ -61,6 +61,9 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
 
     useEffect(() => {
         getCollections();
+        if (collections === []) {
+            getCollections();
+        }
         getUser();
         getMessages();
         let intervalId = setInterval(() => {
@@ -99,6 +102,7 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
 
             if (response.status === 200) {
                 if (response.data[0]) {
+                    console.log(response.data);
                     setCollections(response.data);
                 } else {
                     try {
@@ -117,7 +121,7 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
 
     async function addCollection() {
         try {
-            await API.addCollection({ name: 'Nowe rośliny' }, {
+            const response = await API.addCollection({ name: 'Nowe rośliny' }, {
                 headers: {
                     'auth-token': await AsyncStorage.getItem('auth-token'),
                     'user_id': await AsyncStorage.getItem('user_id')
@@ -133,7 +137,7 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
     }
 
     async function addPlantToUser() {
-        console.log('trying copy');
+        console.log('trying copy' + ad.plant_id);
         try {
             const response = await API.copyUserPlant(ad.plant_id, {
                 headers: {
@@ -142,13 +146,13 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
                 }
             });
             if (response.status === 200) {
-                console.log('copied');
                 setNewPlantId(response.data.userPlant);
+                console.log(response.data.userPlant, newPlantId, collections);
                 setCollectionModalVisible(true);
             }
         } catch (error) {
             if (error.response.status === 400) {
-                console.log(error.response.statusText);
+                console.log(error.response.data);
             }
         }
     }
