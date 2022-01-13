@@ -183,6 +183,12 @@ const Plant = ({plantId, onClose, status, adId, ad, roomName, roomId, label}) =>
         setCollectionModalVisible(false);
     }
 
+    const onSellModalClose = () => {
+        // showToast({ name: responseData.species_name });
+        setModalVisible(false);
+        setCollectionModalVisible(false);
+    }
+
     const onConversation = () => {
         setConversationVisible(!conversationVisible);
     }
@@ -408,7 +414,7 @@ const Plant = ({plantId, onClose, status, adId, ad, roomName, roomId, label}) =>
         conversationVisible ? <Conversation ad_id={adId} ad={ad} owner_id={responseData.user_id} onMessageClose={onConversation}/> :
         <Layout style={styles.layout}>
             <Modal onBackdropPress={() => setModalVisible(false)} visible={modalVisible}>
-                {modalContent == 'sell' ? <SellModal plant_id={responseData._id} image={responseData.image} visible={onModalClose}/>:<RemoveModal onSubmit={onRemovePlantSubmit}/>}
+                {modalContent == 'sell' ? <SellModal plant_id={responseData._id} image={responseData.image} visible={onSellModalClose}/>:<RemoveModal onSubmit={onRemovePlantSubmit}/>}
             </Modal>
             <Modal onBackdropPress={() => setCollectionModalVisible(false)} visible={collectionModalVisible}>
                 <AdToCollectionModal plantId={newPlantId} collections={collections} onClose={onModalClose}/>
@@ -533,7 +539,7 @@ const styles = StyleSheet.create({
         left: 20,
         top: -20,
         height: 40,
-        width: Dimensions.get('window').width * 0.6,
+        // width: Dimensions.get('window').width * 0.6,
         backgroundColor: colors.grayBackgroundLight,
         borderWidth: 3,
         borderColor: colors.grayMedium,

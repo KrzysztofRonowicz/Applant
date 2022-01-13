@@ -194,9 +194,9 @@ const Board = ({navigation}) => {
                     visible={visible}
                     onSelect={index => onMenuItemSelect(index.row)}
                     onBackdropPress={() => setVisible(false)}>
-                    <MenuItem title='Dzisiaj' />
-                    <MenuItem title='Jutro' />
-                    <MenuItem title='Pojutrze' />
+                    <MenuItem title='Do dzisiaj' />
+                    <MenuItem title='Do jutra' />
+                    <MenuItem title='Do pojutrza' />
                 </OverflowMenu>
             </View>
             {isLoading ? 

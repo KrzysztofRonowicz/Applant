@@ -16,7 +16,8 @@ export const About = ({ onTouchCategory, plantId, data, status }) => {
             </TouchableOpacity>
             <View style={styles.content}>
                 <ScrollView>
-                   <Text style={styles.aboutText}><Text style={styles.aboutTitle}>{data.species_name}</Text> 
+                    <Text style={styles.aboutTitle}>{data.species_name}</Text> 
+                    <Text style={styles.aboutText}>
                         {data.description}
                     </Text> 
                 </ScrollView>
@@ -473,6 +474,7 @@ const styles = StyleSheet.create({
         ...labels.qsm,
         color: colors.black,
         fontWeight: 'bold',
+        textAlign: 'center'
     }, 
     aboutText: {
         ...labels.qsm,
