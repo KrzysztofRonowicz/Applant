@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Text, Modal, Input, Button } from '@ui-kitten/components';
-import { BackHandler, StyleSheet, View, FlatList, TouchableOpacity, Image, Dimensions, ScrollView } from 'react-native';
+import { StyleSheet, View, FlatList, TouchableOpacity, Image, Dimensions, ScrollView } from 'react-native';
 import { labels, colors, spacing, rounding } from '../../style/base';
 import { alertsImages } from '../../assets/alerts/alertsImages';
 import { Icon } from 'react-native-elements'
@@ -36,10 +36,6 @@ const DATA = [
         id: 2,
         category: 'Klimat'
     },
-    // {
-    //     id: 3,
-    //     category: 'Akcje Ratunkowe'
-    // }
 ];
 
 const SwitchCategory = ({ onTouchCategory, id, data, status, plantId, fullAccess}) => {

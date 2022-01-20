@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout, Text, Input, OverflowMenu, MenuItem, Modal } from '@ui-kitten/components';
-import { BackHandler, StyleSheet, FlatList, View, TouchableOpacity, TouchableWithoutFeedback, Keyboard, Dimensions, Image } from 'react-native';
+import { StyleSheet, FlatList, View, TouchableOpacity, TouchableWithoutFeedback, Keyboard, Dimensions, Image } from 'react-native';
 import { colors, labels, rounding, spacing } from '../../style/base';
 import { Icon } from 'react-native-elements';
 import Plant from './plant';
@@ -42,7 +42,6 @@ const Message = ({message, sender_id, user_id}) => (
 
 const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
     const [userId, setUserId] = useState(undefined);
-    const [conversationVisible, setConversationVisible] = useState(true);
     const [conversationId, setConversationId] = useState(undefined);
     const [overflowVisible, setOverflowVisible] = useState(false);
     const [clearVisible, setClearVisible] = useState(false);
@@ -53,9 +52,6 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
     const [collections, setCollections] = useState([]);
     const [newPlantId, setNewPlantId] = useState();
 
-    const [messages, setMessages] = useState([]);
-
-    const [selectedIndex, setSelectedIndex] = useState(null);
     const [responseData, setResponseData] = useState([]);
     const flatListRef = useRef();
 

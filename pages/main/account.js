@@ -50,7 +50,6 @@ const Account = () => {
             </View>
             <View>
                 <Button onPress={() => {
-                    // AsyncStorage.removeItem('foh-key');
                     AsyncStorage.removeItem('auth-token');
                     AsyncStorage.removeItem('user_id');
                     context.setLoginState(false);

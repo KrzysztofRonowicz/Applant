@@ -3,7 +3,6 @@ import { createStackNavigator, TransitionPresets }from '@react-navigation/stack'
 import { NavigationContainer } from '@react-navigation/native';
 import Login from './login';
 import Registration from './registration';
-// import Hello from './hello';
 
 const Stack = createStackNavigator();
 
@@ -16,11 +15,6 @@ const AuthorizationNavigator = () => {
 					headerShown: false,
 				}}
 				>
-				{/* <Stack.Screen name="Hello" component={Hello}
-					options={{
-						title: 'Hello',
-						...TransitionPresets.SlideFromRightIOS,
-					}}/> */}
 				<Stack.Screen name="Login" component={Login}
 					options={{
 						title: 'Login',

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Text, Input, MenuItem, OverflowMenu, CheckBox, Toggle, Radio, Tooltip } from '@ui-kitten/components';
+import { Layout, Text, Input, Radio, Tooltip } from '@ui-kitten/components';
 import { Icon } from 'react-native-elements'
 import Plant from './plant';
-import { BackHandler, StyleSheet, TouchableOpacity, View, FlatList, Dimensions, Image } from 'react-native';
+import { StyleSheet, TouchableOpacity, View, FlatList, Dimensions, Image } from 'react-native';
 import { colors, labels, spacing, rounding } from '../../style/base';
 import { alertsImages } from '../../assets/alerts/alertsImages';
 import AsyncStorage from '@react-native-async-storage/async-storage'

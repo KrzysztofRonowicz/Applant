@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Layout, Text, MenuItem, OverflowMenu, Input, Calendar, Modal, Button, Datepicker, NativeDateService  } from '@ui-kitten/components';
-import { BackHandler, StyleSheet, View, FlatList, TouchableOpacity, Image, Dimensions, TouchableWithoutFeedback, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { Text, Calendar, Modal, Button, Datepicker, NativeDateService  } from '@ui-kitten/components';
+import { StyleSheet, View, FlatList, TouchableOpacity, Image, Dimensions, ScrollView } from 'react-native';
 import { labels, colors, spacing, rounding } from '../../style/base';
 import { alertsImages, alertsImagesDarkColors, alertsImagesLightColors } from '../../assets/alerts/alertsImages';
 import { Slider } from '@miblanchard/react-native-slider';
@@ -253,9 +253,6 @@ export const Care = ({ onTouchCategory, plantId, careData, status, fullAccess })
                         disabled={status === 'wiki' || fullAccess === 'view'}
                     />
                     <View style={{flex: 1, flexDirection: 'row', marginTop: spacing.sm}}>
-                        {/* <Button onPress={() => setModalVisible(false)} style={{ flex: 1, marginRight: spacing.xs }} disabled={!selectedParameter.modified || status === 'wiki' || fullAccess === 'view'}>
-                            PRZYWRÓĆ
-                        </Button> */}
                         <Button onPress={() => updatePlant()} style={{ flex: 1, marginLeft: spacing.xs }} disabled={saveDisabled || status === 'wiki' || fullAccess === 'view'}>
                             ZAPISZ
                         </Button>
@@ -492,19 +489,16 @@ const styles = StyleSheet.create({
         flex: 1,
         marginLeft: spacing.xs,
         marginRight: 15,
-        // alignItems: 'center',
-        // alignContent: 'center', 
-        // justifyContent: 'space-around',
     },
     plantParameterIndicatorWrapper: {
         flexDirection: 'row', 
         padding: spacing.xs,
         borderRadius: rounding.sm,
         elevation: 2,
-        // flex: 1,
+        
     },
     backdrop: {
-        // backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        
     },
     modal: {
         width: Dimensions.get('screen').width * 0.8,

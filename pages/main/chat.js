@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Text, MenuItem, OverflowMenu, Tooltip  } from '@ui-kitten/components';
-import { BackHandler, StyleSheet, View, FlatList, TouchableOpacity, Image, Vibration } from 'react-native';
+import { Layout, Text, Tooltip  } from '@ui-kitten/components';
+import { StyleSheet, View, FlatList, TouchableOpacity, Image} from 'react-native';
 import { labels, colors, spacing, rounding } from '../../style/base';
-import { alertsImages, alertsImagesDarkColors } from '../../assets/alerts/alertsImages';
 import { Icon } from 'react-native-elements'
-import Plant from './plant';
 import Conversation from './conversation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as API from '../../api/apiMethods';
@@ -50,7 +48,6 @@ const Ticket = ({ data, onMessageSelect, user_id }) => (
             <TouchableOpacity 
                 style={{ alignSelf: 'flex-start', width: '100%' }} 
                 onPress={() => {
-                    // Vibration.vibrate(1);
                     onMessageSelect(data.ad._id, data.users[0]._id, data.ad);
                 }}
             >
@@ -102,11 +99,6 @@ const Chat = ({ navigation }) => {
         getPrefixMessages();
         setMessageVisible(!messageVisible);
     }
-
-    const onItemSelect = (index) => {
-        setSelectedIndex(index);
-        setVisible(false);
-    };
 
     async function getUser() {
         try {
@@ -233,7 +225,6 @@ const styles = StyleSheet.create({
     ticketAdName: {
         color: colors.black,
         ...labels.qsp,
-        // borderBottomWidth: 1,
     },
     ticketAdMessage: {
         color: colors.grayDark,
