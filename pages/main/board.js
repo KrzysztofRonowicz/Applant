@@ -7,6 +7,9 @@ import { Icon } from 'react-native-elements'
 import Plant from './plant';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as API from '../../api/apiMethods';
+import { useFocusEffect } from '@react-navigation/native';
+import LottieView from 'lottie-react-native';
+import { sameLessDay } from './plantDetails';
 
 const getImageUrl = (id) => {
     return 'https://drive.google.com/uc?id=' + id;
@@ -28,32 +31,38 @@ const PrintDate = ({dateString}) => {
     const monthString = month >= 10 ? month : `0${month}`;
     const dayString = day >= 10 ? day : `0${day}`;
     return (
-            <Text 
-                style={{ 
-                    ...labels.qsm, 
-                    color: colors.grayDark, 
-                    alignSelf: 'center', 
+        <View>
+            <Text
+                style={{
+                    ...labels.qsm,
+                    color: colors.grayDark,
+                    alignSelf: 'center',
                 }}>
-            {`${dayString}.${monthString}.${date.getFullYear()}`}
+                {`${dayString}.${monthString}.${date.getFullYear()}`}
             </Text>
+        </View>
         );
 }
 
-const TicketButton = ({data, onUpdateTicket}) => {
+const TicketButton = ({data, onUpdateTicket, inactive}) => {
     const [updatePressed, setUpdatePressed] = useState(false);
 
     const RenderButon = () => {
         if (updatePressed) {
             return (
-                <View style={[styles.ticketButton, { backgroundColor: 'rgba(0,0,0,0)', elevation: 0, borderWidth: 1, borderColor: colors.greenLight}]}>
-                    <Icon type='material' name='done' size={22} color={colors.greenLight} style={styles.ticketButtonImage}/>
+                // <View style={[styles.ticketButton, { backgroundColor: 'rgba(0,0,0,0)', elevation: 0, borderWidth: 1, borderColor: colors.greenLight}]}>
+                //     <Icon type='material' name='done' size={22} color={colors.greenLight} style={styles.ticketButtonImage}/>
+                // </View>
+                <View style={{ width:60, height:50, position: 'absolute', top: -10, right: 0}}>
+                    <LottieView style={{ backgroundColor: 'rgba(0,0,0,0)'}} colorFilters='red' source={require('../../assets/lottie/91749-done.json')} autoPlay loop={false} cacheStrategy='strong'/>
                 </View>
             )
         } else {
             return (
                 <TouchableOpacity
+                    disabled={inactive}
                     onPress={() => { setUpdatePressed(true); onUpdateTicket(data._id) }}
-                    style={[styles.ticketButton, { backgroundColor: alertsImagesDarkColors(data.name) }]}
+                    style={[styles.ticketButton, inactive ? { backgroundColor: colors.grayLight} : { backgroundColor: alertsImagesDarkColors(data.name) }]}
                 >
                     {/* <Text style={{...labels.qxs, alignSelf: 'center', marginRight: 3}}>Wykonaj</Text> */}
                     <Image style={styles.ticketButtonImage} source={alertsImages(data.name)} />
@@ -65,7 +74,7 @@ const TicketButton = ({data, onUpdateTicket}) => {
     return (<RenderButon/>);
 }
 
-const Ticket = ({data, onPlantSelect, onUpdateTicket}) => (
+const Ticket = ({data, onPlantSelect, onUpdateTicket, inactive}) => (
     <View style={styles.ticketContainer}>
         <Image style={styles.ticketImage} source={{uri: getImageUrl(data.image)}}/>
         <View style={styles.ticketContent}>
@@ -74,7 +83,7 @@ const Ticket = ({data, onPlantSelect, onUpdateTicket}) => (
             </TouchableOpacity>
             <View style={styles.ticketButtons}>
                 <PrintDate dateString={data.exec_date} />
-                <TicketButton data={data} onUpdateTicket={onUpdateTicket}/>
+                <TicketButton inactive={inactive} data={data} onUpdateTicket={onUpdateTicket}/>
             </View>
         </View>
     </View>
@@ -87,20 +96,35 @@ const Board = ({navigation}) => {
     const [selectedPlant, setSelectedPlant] = useState(undefined);
     const [selectedTicket, setSelectedTicket] = useState(undefined);
     const [plantVisible, setPlantVisible] = useState(false);
+    const [daysAhead, setDaysAhead] = useState(0);
+
+    const today = new Date();
 
     const [response, setResponse] = useState([]);
+    const [updatedResponse, setUpdatedResponse] = useState([]);
 
-    useEffect(() => {
-        const unsubscribe = navigation.addListener('focus', () => {
-            getTickets(0);
-        });
+    useFocusEffect(
+        React.useCallback(() => {
+            const unsubscribe = navigation.addListener('focus', () => {
+                setIsLoading(false);
+                getTickets(0, true);
+            });
 
-        // Return the function to unsubscribe from the event so it gets removed on unmount
-        return unsubscribe;
-    }, [navigation]);
+            return () => {
+                setTimeout(() => {
+                    setSelectedPlant(undefined);
+                    setPlantVisible(false);
+                    setSelectedIndex(null);
+                    // setResponse([]);
+                }, 100);
+                unsubscribe;
+            };
+        }, [])
+    );
 
-    async function getTickets(days_ahead) {
-        setIsLoading(true);
+    async function getTickets(days_ahead, loadingScreen, update) {
+        loadingScreen ? 
+        setIsLoading(true) : <></>;
         try {
             const response = await API.getTickets(days_ahead, {
                 headers: {
@@ -109,6 +133,8 @@ const Board = ({navigation}) => {
                 }
             });
             if (response.status === 200) {
+                update ?
+                setResponse([]) : <></>;
                 setResponse(response.data);
                 setIsLoading(false);
             }
@@ -128,15 +154,16 @@ const Board = ({navigation}) => {
                 }
             });
             if (response.status === 200) {
-                setTimeout(() => {
-                    getTickets(0);
-                }, 1000);
+                console.log(response.data);
             }
         } catch (error) {
             if (error.response.status === 400) {
                 console.log(error.response.status);
             }
         }
+        setTimeout(() => {
+            getTickets(daysAhead, false, true);
+        }, 600);
     }
 
     const onPlantSelect = (e) => {
@@ -160,20 +187,21 @@ const Board = ({navigation}) => {
     };
 
     const onMenuItemSelect = (index) => {
+        setDaysAhead(index);
         setVisible(false);
         if (index === 0) {
-            getTickets(0);
+            getTickets(0, true);
         }
         if (index === 1) {
-            getTickets(1);
+            getTickets(1, true);
         }
         if (index === 2) {
-            getTickets(2);
+            getTickets(2, true);
         }
     };
 
     const renderItem = ({ item }) => (
-        <Ticket onPlantSelect={onPlantSelect} onUpdateTicket={onUpdateTicket} data={item}/>
+        <Ticket inactive={sameLessDay(new Date(item.exec_date), today) === false} onPlantSelect={onPlantSelect} onUpdateTicket={onUpdateTicket} data={item}/>
     );
 
     const renderToggleButton = () => (
@@ -192,7 +220,8 @@ const Board = ({navigation}) => {
                     style={styles.overflowMenu}
                     anchor={renderToggleButton}
                     visible={visible}
-                    onSelect={index => onMenuItemSelect(index.row)}
+                    selectedIndex={selectedIndex}
+                    onSelect={index => {onItemSelect(index); onMenuItemSelect(index.row)}}
                     onBackdropPress={() => setVisible(false)}>
                     <MenuItem title='Do dzisiaj' />
                     <MenuItem title='Do jutra' />
@@ -203,13 +232,19 @@ const Board = ({navigation}) => {
             <LoadingScreen/> : 
             <FlatList
                 data={response}
+                extraData={updatedResponse}
                 renderItem={renderItem}
                 keyExtractor={item => item._id}
                 showsVerticalScrollIndicator={false}
                 ListEmptyComponent={
-                <View style={{justifyContent: 'center', flex: 1, alignItems: 'center'}}>
-                    <Text style={{...labels.qsp, fontWeight: 'bold'}}>Na dziś to wszystko!</Text>
-                    <Text style={{...labels.qsp}}>Twoje rośliny niczego nie potrzebują :) </Text>
+                <View style={{flex: 1}}>
+                        <View style={{ alignItems: 'center', flex: 3.5, justifyContent: 'center'}}>
+                        <Text style={{...labels.qsp, fontWeight: 'bold'}}>To już wszystko!</Text>
+                        <Text style={{...labels.qsp}}>Twoje rośliny niczego nie potrzebują :) </Text>
+                    </View>
+                    <View style={{flex: 1 }}>
+                        <LottieView source={require('../../assets/lottie/58375-plantas-y-hojas.json')} autoPlay loop />
+                    </View>
                 </View>}
                 contentContainerStyle={{ flexGrow: 1 }}
             />
@@ -241,22 +276,28 @@ const styles = StyleSheet.create({
         width: 150,
     },
     ticketContainer: {
-        backgroundColor: colors.grayBackgroundLight,
+        justifyContent: 'center',
+        backgroundColor: colors.white,
         borderRadius: rounding.sm,
-        borderWidth: 1,
-        borderColor: colors.grayMedium,
+        borderTopWidth: 1,
+        borderTopColor: colors.grayMedium,
         padding: spacing.xs,
         flexDirection: 'row',
         marginBottom: 15,
+        marginHorizontal: 5,
+        elevation: 5,
     },
     ticketImage: {
         width: 80,
         height: 80,
-        marginRight: spacing.sm,
+        // marginRight: spacing.sm,
         borderRadius: rounding.sm,
+        borderWidth: 3,
+        borderColor: colors.white,
+        alignSelf: 'center',
     },
     ticketContent: {
-        backgroundColor: colors.grayBackgroundDark,
+        backgroundColor: colors.white,
         justifyContent: 'space-between',
         paddingHorizontal: spacing.sm,
         paddingVertical: spacing.sm,
@@ -270,17 +311,15 @@ const styles = StyleSheet.create({
     ticketButtons: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        height: 30,
     },
     ticketButton: {
-        // flex: 1,
-        backgroundColor: colors.white,
         borderRadius: rounding.sm,
-        // borderBottomLeftRadius: rounding.sm,
-        // borderBottomRightRadius: rounding.sm,
-        paddingVertical: 5,
-        paddingHorizontal: spacing.md,
-        // marginBottom: 5,
-        // marginHorizontal: 2,
+        // paddingVertical: 5,
+        // paddingHorizontal: spacing.md,
+        justifyContent: 'center',
+        width: 60,
+        height:30,
         elevation: 3,
         flexDirection: 'row'
     },

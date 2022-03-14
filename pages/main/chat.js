@@ -7,6 +7,8 @@ import Conversation from './conversation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as API from '../../api/apiMethods';
 import { LoadingScreen } from './board';
+import LottieView from 'lottie-react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 const getImageUrl = (id) => {
     return 'https://drive.google.com/uc?id=' + id;
@@ -79,13 +81,31 @@ const Chat = ({ navigation }) => {
 
     const [responseData, setResponseData] = useState([]);
 
-    useEffect(() => {
-        const unsubscribe = navigation.addListener('focus', () => {
-            getUser();
-            getPrefixMessages();
-        });
-        return unsubscribe;
-    }, [navigation]);
+    // useEffect(() => {
+    //     const unsubscribe = navigation.addListener('focus', () => {
+    //         getUser();
+    //         getPrefixMessages();
+    //     });
+    //     return unsubscribe;
+    // }, [navigation]);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            const unsubscribe = navigation.addListener('focus', () => {
+                getUser();
+                getPrefixMessages();
+            });
+
+            return () => {
+                setTimeout(() => {
+                    setSelectedPlant(undefined);
+                    setSelectedIndex(null);
+                    setMessageVisible(false);
+                }, 100);
+                unsubscribe;
+            };
+        }, [])
+    );
 
     const onMessageSelect = (plant, owner, ad) => {
         setSelectedPlant(plant);
@@ -162,7 +182,8 @@ const Chat = ({ navigation }) => {
                     keyExtractor={item => item.message[0].conversation_id}
                     showsVerticalScrollIndicator={false}
                     ListEmptyComponent={
-                        <View style={{ justifyContent: 'center', flex: 1, alignItems: 'center' }}>
+                        <View style={{ justifyContent: 'center', flex: 1, alignItems: 'center', marginTop: -50 }}>
+                            <LottieView style={{ height: 150, marginBottom: spacing.sm }} source={require('../../assets/lottie/66934-tumbleweed-rolling.json')} autoPlay loop />
                             <Text style={{ ...labels.qsp, fontWeight: 'bold', textAlign: 'center' }}>Twoja skrzynka jest pusta</Text>
                             <Text style={{ ...labels.qsp, textAlign: 'center' }}>Zamieść lub wyszukaj ogłoszenie i nawiąż kontakt</Text>
                         </View>}
@@ -196,7 +217,7 @@ const styles = StyleSheet.create({
         width: 150,
     },
     ticketContainer: {
-        backgroundColor: colors.grayBackgroundLight,
+        backgroundColor: colors.white,
         borderRadius: rounding.sm,
         borderWidth: 1,
         borderColor: colors.grayMedium,
@@ -211,7 +232,7 @@ const styles = StyleSheet.create({
         borderRadius: rounding.sm,
     },
     ticketContent: {
-        backgroundColor: colors.grayBackgroundDark,
+        backgroundColor: colors.grayBackgroundLight,
         justifyContent: 'space-between',
         paddingHorizontal: spacing.sm,
         paddingVertical: spacing.xs,

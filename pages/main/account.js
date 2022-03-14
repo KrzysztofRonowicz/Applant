@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useReducer } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout, Text, Button, Icon } from '@ui-kitten/components';
-import { BackHandler, View } from 'react-native';
+import { View } from 'react-native';
 import { AppContext } from '../../context';
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { colors, labels, spacing } from '../../style/base';

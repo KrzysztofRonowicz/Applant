@@ -7,6 +7,8 @@ import { colors, labels, spacing, rounding } from '../../style/base';
 import { alertsImages } from '../../assets/alerts/alertsImages';
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as API from '../../api/apiMethods';
+import LottieView from 'lottie-react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 const PlantAdParameters = ({ prize, water_index, light_index, compost_index }) => {
     return (
@@ -56,6 +58,17 @@ const Search = ({route, navigation}) => {
         searchPlant(inputValue);
         searchMarketPlant(inputValue);
     }, [marketVisible]);
+
+    useFocusEffect(
+        React.useCallback(() => {
+
+            return () => {
+                setTimeout(() => {
+                    setPlantVisible(false);
+                }, 100);
+            };
+        }, [])
+    );
 
     const onFilterSelect = (index) => {
         setFilters(index);
@@ -175,7 +188,7 @@ const Search = ({route, navigation}) => {
                 value={inputValue}
                 textStyle={{...labels.qsp}}
                 size='large'
-                placeholder='Szukaj rośliny'
+                placeholder={marketVisible ? 'Szukaj ogłoszenia' : 'Szukaj rośliny'}
                 onChangeText={nextValue => marketVisible ? searchMarketPlant(nextValue) : searchPlant(nextValue)}
             />
             <View style={styles.filterSortContainer}>
@@ -237,9 +250,14 @@ const Search = ({route, navigation}) => {
                 keyExtractor={item => item._id}
                 showsVerticalScrollIndicator={false}
                 ListEmptyComponent={
-                    <View style={{ justifyContent: 'center', flex: 1, alignItems: 'center' }}>
-                        <Text style={{ ...labels.qsp, fontWeight: 'bold' }}>Nie znaleziono :(</Text>
-                        <Text style={{ ...labels.qsp }}>Spróbuj innej nazwy</Text>
+                    <View style={{ justifyContent: 'center', flex: 1, alignItems: 'center', marginTop: -50 }}>
+                        <View>
+                            <LottieView style={{ height: 200 }} source={require('../../assets/lottie/61372-404-error-not-found.json')} autoPlay loop /> 
+                        </View>
+                        <View style={{ marginTop: spacing.sm, alignItems: 'center' }}>
+                            <Text style={{ ...labels.qsp, fontWeight: 'bold' }}>Nie znaleziono :(</Text>
+                            <Text style={{ ...labels.qsp }}>Spróbuj innej nazwy</Text>
+                        </View>
                     </View>}
                 contentContainerStyle={{ flexGrow: 1 }}
             />
@@ -283,9 +301,11 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderRadius: rounding.sm,
         borderColor: colors.grayMedium,
-        marginVertical: Dimensions.get('window').width * 0.03,
+        marginHorizontal: spacing.xs,
+        marginVertical: Dimensions.get('window').width * 0.02,
         backgroundColor: colors.grayBackgroundDark,
         padding: 1,
+        elevation: 5,
     },
     plantImageContainer: {
         width: '100%',

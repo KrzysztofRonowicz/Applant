@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import { registerRootComponent }from 'expo';
 import *as Font from 'expo-font';
-import AuthorizationNavigator from './authorizationNavigator'
 import Hello from './hello';
 
 let customFonts = {

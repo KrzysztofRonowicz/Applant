@@ -4,7 +4,6 @@ import { StyleSheet, FlatList, View, TouchableOpacity, TouchableWithoutFeedback,
 import { colors, labels, rounding, spacing } from '../../style/base';
 import { Icon } from 'react-native-elements';
 import Plant from './plant';
-import { AdToCollectionModal } from './plant';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as API from '../../api/apiMethods';
 
@@ -39,6 +38,48 @@ const getImageUrl = (id) => {
 const Message = ({message, sender_id, user_id}) => (
     <DirectedMessage sender={sender_id} message={message} user={user_id}/>
 );
+
+export const AdToCollectionModal = ({ onClose, collections, plantId }) => {
+
+    async function addPlantToCollection(collectionId) {
+        try {
+            const response = await API.addPlantToCollection(collectionId,
+                { plant_id: plantId },
+                {
+                    headers: {
+                        'auth-token': await AsyncStorage.getItem('auth-token')
+                    }
+                }
+            );
+            console.log(response.data);
+            if (response.status === 200) {
+                onClose();
+            }
+        } catch (error) {
+            if (error.response.status === 400) {
+                console.log(error.response.status);
+            }
+        }
+    }
+
+    const renderCollectionItem = ({ item }) => (
+        <TouchableOpacity style={styles.collectionButton} onPress={() => addPlantToCollection(item._id)}>
+            <Text style={styles.collectionText}>{item.name}</Text>
+        </TouchableOpacity>
+    );
+
+    return (
+        <View style={[styles.modal, { maxHeight: Dimensions.get('screen').width * 0.8 }]}>
+            <Text style={{ ...labels.qsp, fontWeight: 'bold' }}>Dodaj do</Text>
+            <FlatList
+                data={collections}
+                renderItem={renderCollectionItem}
+                keyExtractor={item => item._id}
+                showsVerticalScrollIndicator={false}
+            />
+        </View>
+    );
+}
 
 const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
     const [userId, setUserId] = useState(undefined);
@@ -142,6 +183,7 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
                 }
             });
             if (response.status === 200) {
+                console.log('!!!!!!!!!!!!!!');
                 setNewPlantId(response.data.userPlant);
                 console.log(response.data.userPlant, newPlantId, collections);
                 setCollectionModalVisible(true);
@@ -400,6 +442,26 @@ const styles = StyleSheet.create({
         backgroundColor: 'pink',
         marginRight: spacing.sm,
     },
+    modal: {
+        width: Dimensions.get('screen').width * 0.8,
+        backgroundColor: colors.appLightBackground,
+        padding: spacing.sm,
+        borderRadius: rounding.xs,
+        elevation: 20,
+    },
+    collectionButton: {
+        backgroundColor: colors.appLightBackground,
+        borderColor: colors.grayDark,
+        marginVertical: spacing.xs,
+        paddingVertical: 2,
+        borderLeftWidth: 2,
+        borderRightWidth: 2,
+    },
+    collectionText: {
+        ...labels.qsp,
+        color: colors.grayDark,
+        textAlign: 'center'
+    }
 });
 
 export default Conversation;

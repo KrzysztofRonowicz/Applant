@@ -3,10 +3,13 @@ import { Layout, Text, Modal, Input, Button } from '@ui-kitten/components';
 import { StyleSheet, View, FlatList, TouchableOpacity, Image, Dimensions, TouchableWithoutFeedback } from 'react-native';
 import { labels, colors, spacing, rounding } from '../../style/base';
 import { Icon } from 'react-native-elements'
-import Plant from './plant';
+import Plant, { LoadingBlur, showRemovedPlantToast } from './plant';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as API from '../../api/apiMethods';
 import { LoadingScreen } from './board';
+import LottieView from 'lottie-react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
 
 const getImageUrl = (id) => {
     return 'https://drive.google.com/uc?id=' + id;
@@ -14,6 +17,7 @@ const getImageUrl = (id) => {
 
 const PlantCard = ({plantData, insertPlantAbove, insertPlantBelow, onPlantSelect}) => {
     const [moveEnabled, setMoveEnabled] = useState(false);
+    const [isFetchingData, setIsFetchingData] = useState(false);
 
     const onMovePress = () => {
         setMoveEnabled(!moveEnabled);
@@ -23,7 +27,7 @@ const PlantCard = ({plantData, insertPlantAbove, insertPlantBelow, onPlantSelect
         <TouchableOpacity style={styles.collectionPlant} activeOpacity={.6} onLongPress={onMovePress} onPress={() => onPlantSelect(plantData._id)}>
             <Image source={{ uri: getImageUrl(plantData.image) }} style={styles.collectionPlantImage} />
             <Text numberOfLines={1} ellipsizeMode='tail' style={styles.collectionPlantName}>{plantData.name}</Text>
-            {moveEnabled ? 
+            {moveEnabled ? isFetchingData ? <LoadingBlur isFetching={true}/> :
                 <View style={{ position: 'absolute', width: '100%', height: '100%' }}>
                     <TouchableOpacity 
                         style={{ 
@@ -35,9 +39,9 @@ const PlantCard = ({plantData, insertPlantAbove, insertPlantBelow, onPlantSelect
                             backgroundColor: 'rgba(248, 248, 248, 0.5)' 
                         }}
                         onLongPress={onMovePress}
-                        onPress={() => insertPlantAbove(plantData._id)}
+                        onPress={() => { setIsFetchingData(true); insertPlantAbove(plantData._id); }}
                     >
-                        <Icon type='material' name='arrow-drop-up' size={60} color={'white'} />
+                        <Icon type='material' name='arrow-drop-up' size={60} color={'black'} />
                     </TouchableOpacity>
                     <TouchableOpacity 
                         style={{ 
@@ -49,9 +53,9 @@ const PlantCard = ({plantData, insertPlantAbove, insertPlantBelow, onPlantSelect
                             backgroundColor: 'rgba(248, 248, 248, 0.5)' 
                         }}
                         onLongPress={onMovePress}
-                        onPress={() => insertPlantBelow(plantData._id)}
+                        onPress={() => { setIsFetchingData(true); insertPlantBelow(plantData._id)}}
                     >
-                        <Icon type='material' name='arrow-drop-down' size={60} color={'white'} />
+                        <Icon type='material' name='arrow-drop-down' size={60} color={'black'} />
                     </TouchableOpacity>
                 </View>
             :    
@@ -113,7 +117,7 @@ const AddButton = ({ name, marginLeft, marginRight, onPress }) => (
     </TouchableOpacity>
 );
 
-const CollectionModal = ({ collectionName, collectionId, collectionPlantCount, onClose, onSubmit }) => {
+const CollectionModal = ({ collectionName, collectionId, collectionPlantCount, onClose, onSubmit, changeFetching }) => {
     const [name, setName] = useState(collectionName);
     const [id, setId] = useState(collectionId);
 
@@ -128,6 +132,7 @@ const CollectionModal = ({ collectionName, collectionId, collectionPlantCount, o
     }
 
     async function addCollection() {
+        changeFetching(true);
         try {
             await API.addCollection({name: name}, {
                 headers: {
@@ -135,12 +140,14 @@ const CollectionModal = ({ collectionName, collectionId, collectionPlantCount, o
                 'user_id': await AsyncStorage.getItem('user_id')
             }});
             onSubmit();
+            changeFetching(false);
         } catch (error) {
             console.log(error);
         }
     }
 
     async function removeCollection() {
+        changeFetching(true);
         try {
             await API.removeCollection(id, {
                 headers: {
@@ -148,6 +155,7 @@ const CollectionModal = ({ collectionName, collectionId, collectionPlantCount, o
                 }
             });
             onSubmit();
+            changeFetching(false);
         } catch (error) {
             console.log(error);
         }
@@ -183,24 +191,45 @@ const Collections = ({navigation}) => {
     const [collectionPlantCount, setCollectionPlantCount] = useState(undefined);
     const [plantVisible, setPlantVisible] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
+    const [isFetchingData, setIsFetchingData] = useState(false);
 
     const [collections, setCollections] = useState([]);
 
     useEffect(() => {
         setIsLoading(true);
-        const unsubscribe = navigation.addListener('focus', () => {
-            getCollections();
-        });
-
-        // Return the function to unsubscribe from the event so it gets removed on unmount
-        return unsubscribe;
+        getCollections();
     }, [navigation]);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            const unsubscribe = navigation.addListener('focus', () => {
+                getCollections();
+            });
+
+            return () => {
+                setTimeout(() => {
+                    setSelectedPlant(undefined);
+                    setPlantVisible(false);
+                }, 100);
+                unsubscribe;
+            };
+        }, [])
+    );
+
+    const showRemovedPlantToast = (props) => {
+        Toast.show({
+            type: 'success',
+            text1: 'Usunięto roślinę!',
+            text2: 'Roślina została usunięta z twoich kolekcji!'
+        });
+    }
 
     const onPlantSelect = (e) => {
         setSelectedPlant(e);
         setPlantVisible(!plantVisible);
         if (!e) {
             getCollections();
+            showRemovedPlantToast();
         }
     };
 
@@ -328,33 +357,44 @@ const Collections = ({navigation}) => {
             {
             plantVisible ?
             <Plant plantId={selectedPlant} onClose={onPlantSelect} status={'own'}/> :
+            <>
             <Layout style={styles.layout}>
                 <Modal
                     visible={modalVisible}
                     // backdropStyle={styles.backdrop}
                     onBackdropPress={() => { setModal(false)}}>
-                    <CollectionModal onSubmit={getCollections} onClose={setModal} collectionName={collectionName} collectionId={collectionId} collectionPlantCount={collectionPlantCount}/>
+                    <CollectionModal changeFetching={setIsFetchingData} onSubmit={getCollections} onClose={setModal} collectionName={collectionName} collectionId={collectionId} collectionPlantCount={collectionPlantCount}/>
                 </Modal>        
                 <View style={styles.header}>
                     <Text style={styles.title}>Moje rośliny</Text>
                     <AddButton onPress={setModal} name={'add-circle'} />
                 </View>
-                {isLoading ? <LoadingScreen/> : 
-                <FlatList
-                    data={collections}
-                    renderItem={renderItem}
-                    keyExtractor={item => item._id}
-                    showsVerticalScrollIndicator={false}
-                    ListEmptyComponent={
-                        <View style={{ justifyContent: 'center', flex: 1, alignItems: 'center' }}>
-                            <Text style={{ ...labels.qsp, fontWeight: 'bold' }}>Nie posiadasz żadnej kolekcji roślin</Text>
-                            <Text style={{ ...labels.qsp }}>Utwórz kolekcję za pomocą </Text>
-                            <Icon type='material' name={'add-circle'} size={20} color={colors.greenLight} style={{marginTop: 10}}/>
-                        </View>}
-                    contentContainerStyle={{ flexGrow: 1 }}
-                />
+                {isLoading ? <LoadingScreen/> :   
+                    <FlatList
+                        data={collections}
+                        renderItem={renderItem}
+                        keyExtractor={item => item._id}
+                        showsVerticalScrollIndicator={false}
+                        ListEmptyComponent={
+                            <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: spacing.md }}>
+                                <View style={{ marginBottom: spacing.md}}>
+                                    <LottieView style={{height:150}} source={require('../../assets/lottie/28145-let-some-light-in.json')} autoPlay loop />
+                                </View>
+                                <View style={{ alignItems: 'center'}}>
+                                    <Text style={{ ...labels.qsp, fontWeight: 'bold' }}>Nie posiadasz żadnej kolekcji roślin</Text>
+                                    <View style={{flexDirection: 'row'}}>
+                                        <Text style={{ ...labels.qsp }}>Utwórz kolekcję za pomocą </Text>
+                                        <Icon type='material' name={'add-circle'} size={20} color={colors.greenLight} style={{marginTop: 4}}/>
+                                    </View>
+                                </View>
+                            </View>}
+                        contentContainerStyle={{ flexGrow: 1 }}
+                    />
                 }
+                <Toast/>
             </Layout>
+            <LoadingBlur isFetching={isFetchingData} />
+            </>
             }
         </TouchableWithoutFeedback>
     );
@@ -379,6 +419,7 @@ const styles = StyleSheet.create({
         color: colors.greenDark,
     },
     addButton: {
+        marginTop: 6,
         width: 26,
         height: 26,
         alignSelf: 'center',
@@ -413,7 +454,8 @@ const styles = StyleSheet.create({
     },
     collectionPlantName: {
         ...labels.qxs,
-        alignSelf: 'center',
+        alignSelf: 'stretch',
+        textAlign: 'center'
     },
     trapezoid: {
         alignSelf: 'center',

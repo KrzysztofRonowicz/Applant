@@ -114,6 +114,16 @@ const i18n = {
 
 const localeDateService = new NativeDateService('pl', { i18n, startDayOfWeek: 0 });
 
+export function sameDay(d1, d2) {
+    return d1.getFullYear() === d2.getFullYear() &&
+        d1.getMonth() === d2.getMonth() &&
+        d1.getDate() === d2.getDate();
+}
+
+export function sameLessDay(d1, d2) {
+    return d1.toDateString() <= d2.toDateString();
+}
+
 export const Care = ({ onTouchCategory, plantId, careData, status, fullAccess }) => {
     const [saveDisabled, setSaveDisabled] = useState(true);
     const [date, setDate] = useState(null);
@@ -155,6 +165,7 @@ export const Care = ({ onTouchCategory, plantId, careData, status, fullAccess })
         try {
             let foundIndex = requestData.findIndex(parameter => parameter._id === selectedParameter._id);
             let request = requestData[foundIndex];
+            console.log(requestData[foundIndex]);
             if (status === 'own' || status === 'ad') {
                 response = await API.updateUserPlantCareParameter(plantId, requestData[foundIndex].name ,
                     request,
@@ -203,12 +214,6 @@ export const Care = ({ onTouchCategory, plantId, careData, status, fullAccess })
             }
         }
     };
-
-    function sameDay(d1, d2) {
-        return d1.getFullYear() === d2.getFullYear() &&
-            d1.getMonth() === d2.getMonth() &&
-            d1.getDate() === d2.getDate();
-    }
 
     const DayCell = ({ date }, style) => (
         <View
