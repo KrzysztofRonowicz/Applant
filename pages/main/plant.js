@@ -473,11 +473,11 @@ const Plant = ({plantId, onClose, status, adId, ad, roomName, roomId, label}) =>
                             <Icon type='material' name='close' size={25} color={colors.grayDark} />
                         </View>
                     </TouchableOpacity>
-                    <TouchableOpacity
+                    {/* <TouchableOpacity
                         style={{ position: 'absolute', bottom: 5, right: 10, width: 30, height: 30 }}
                     >
                         <Icon type='material' name='photo' size={30} color={colors.grayDark} />
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                 </View>
                 <View style={styles.details}>
                     <Input

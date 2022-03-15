@@ -269,8 +269,8 @@ const styles = StyleSheet.create({
     layout: {
         flex: 1,
         backgroundColor: colors.appLightBackground,
-        borderTopWidth: 1,
-        borderTopColor: '#DCDCDC',
+        // borderTopWidth: 1,
+        // borderTopColor: '#DCDCDC',
         paddingHorizontal: spacing.md,
         paddingTop: spacing.md
     },

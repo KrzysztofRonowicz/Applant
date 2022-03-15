@@ -7,6 +7,7 @@ import { Slider } from '@miblanchard/react-native-slider';
 import { Icon } from 'react-native-elements';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as API from '../../api/apiMethods';
+import { LoadingBlur } from './plant';
 
 export const About = ({ onTouchCategory, plantId, data, status }) => {
     return(
@@ -126,6 +127,7 @@ export function sameLessDay(d1, d2) {
 
 export const Care = ({ onTouchCategory, plantId, careData, status, fullAccess }) => {
     const [saveDisabled, setSaveDisabled] = useState(true);
+    const [isFetchingData, setIsFetchingData] = useState(false);
     const [date, setDate] = useState(null);
     const [calendarVisible, setCalendarVisible] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
@@ -151,17 +153,19 @@ export const Care = ({ onTouchCategory, plantId, careData, status, fullAccess })
         if (status !== 'wiki') setDatepicker(new Date(parameter.next_date));
     }
 
-    const createUpdateRequest = (data) => {
+    const createUpdateRequest = () => {
         setSaveDisabled(false);
         let tmpRequestData = requestData;
         let foundIndex = tmpRequestData.findIndex(parameter => parameter._id === selectedParameter._id);
         tmpRequestData[foundIndex].frequency = slider[0];
-        if (data) tmpRequestData[foundIndex].next_date = data;
+        tmpRequestData[foundIndex].next_date = datepicker;
         tmpRequestData[foundIndex].modified = true;
         setRequestData(tmpRequestData);
     }
 
     async function updatePlant() {
+        setIsFetchingData(true);
+        createUpdateRequest();
         try {
             let foundIndex = requestData.findIndex(parameter => parameter._id === selectedParameter._id);
             let request = requestData[foundIndex];
@@ -178,12 +182,14 @@ export const Care = ({ onTouchCategory, plantId, careData, status, fullAccess })
                 );
             }
             getPlant();
+            setIsFetchingData(false);
             setModalVisible(false);
         } catch (error) {
             if (error.response.status === 400) {
                 console.log(error.response.status);
             }
         }
+        setSaveDisabled(true);
     }
 
     async function getPlant() {
@@ -232,36 +238,39 @@ export const Care = ({ onTouchCategory, plantId, careData, status, fullAccess })
 
     return (
         <View style={styles.container}>
-            <Modal backdropStyle={styles.backdrop} onBackdropPress={() => {setModalVisible(false)}} visible={modalVisible}>
+            <Modal backdropStyle={styles.backdrop} onBackdropPress={() => { setModalVisible(false); setSaveDisabled(true); }} visible={modalVisible}>
                 <View style={styles.modal}>
-                    <Text style={styles.modalText}>
-                            {selectedParameter.description} co: <Text style={styles.modalAltText}>{slider} </Text> 
-                            {selectedParameter.frequency_unit}
-                    </Text>
-                    <Slider
-                        containerStyle={{marginVertical: spacing.xs}}
-                        value={slider}
-                        onValueChange={value => {setSlider(value); createUpdateRequest()}}
-                        minimumValue={1}
-                        maximumValue={30}
-                        step={1}
-                        disabled={status === 'wiki' || fullAccess === 'view'}
-                    />
-                    <Text style={styles.modalText}>Następny raz: </Text>
-                    <Datepicker
-                        style={styles.datepicker}
-                        dateService={localeDateService}
-                        date={datepicker}
-                        min={tomorrow}
-                        max={yearLater}
-                        onSelect={nextDate => { setDatepicker(nextDate); createUpdateRequest(nextDate)}}
-                        disabled={status === 'wiki' || fullAccess === 'view'}
-                    />
-                    <View style={{flex: 1, flexDirection: 'row', marginTop: spacing.sm}}>
-                        <Button onPress={() => updatePlant()} style={{ flex: 1, marginLeft: spacing.xs }} disabled={saveDisabled || status === 'wiki' || fullAccess === 'view'}>
-                            ZAPISZ
-                        </Button>
+                    <View style={{padding: spacing.sm}}>
+                        <Text style={styles.modalText}>
+                                {selectedParameter.description} co: <Text style={styles.modalAltText}>{slider} </Text> 
+                                {selectedParameter.frequency_unit}
+                        </Text>
+                        <Slider
+                            containerStyle={{marginVertical: spacing.xs}}
+                            value={slider}
+                            onValueChange={value => { setSlider(value); setSaveDisabled(false); }}
+                            minimumValue={1}
+                            maximumValue={30}
+                            step={1}
+                            disabled={status === 'wiki' || fullAccess === 'view'}
+                        />
+                        <Text style={styles.modalText}>Następny raz: </Text>
+                        <Datepicker
+                            style={styles.datepicker}
+                            dateService={localeDateService}
+                            date={datepicker}
+                            min={tomorrow}
+                            max={yearLater}
+                            onSelect={nextDate => { setDatepicker(nextDate); setSaveDisabled(false); }}
+                            disabled={status === 'wiki' || fullAccess === 'view'}
+                        />
+                        <View style={{flex: 1, flexDirection: 'row', marginTop: spacing.sm}}>
+                            <Button onPress={() => updatePlant()} style={{ flex: 1, marginLeft: spacing.xs }} disabled={saveDisabled || status === 'wiki' || fullAccess === 'view'}>
+                                ZAPISZ
+                            </Button>
+                        </View>
                     </View>
+                    <LoadingBlur isFetching={isFetchingData} />
                 </View>
             </Modal>
             <View style={[styles.header, {flexDirection: 'row'}]}>
@@ -304,6 +313,7 @@ export const Care = ({ onTouchCategory, plantId, careData, status, fullAccess })
 
 export const Climate = ({ onTouchCategory, plantId, climateData, status, fullAccess }) => {
     const [saveDisabled, setSaveDisabled] = useState(true);
+    const [isFetchingData, setIsFetchingData] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [sliderValue, setSliderValue] = useState([40,60]);
     const [selectedParameter, setSelectedParameter] = useState(climateData[0]);
@@ -366,6 +376,8 @@ export const Climate = ({ onTouchCategory, plantId, climateData, status, fullAcc
     };
 
     async function updatePlant() {
+        setIsFetchingData(true);
+        createUpdateRequest();
         try {
             let foundIndex = requestData.findIndex(parameter => parameter._id === selectedParameter._id);
             let request = requestData[foundIndex];
@@ -381,6 +393,7 @@ export const Climate = ({ onTouchCategory, plantId, climateData, status, fullAcc
                 );
                 if (response.status === 200) {
                     getPlant();
+                    setIsFetchingData(false);
                     setModalVisible(false);
                 }
             }
@@ -389,42 +402,43 @@ export const Climate = ({ onTouchCategory, plantId, climateData, status, fullAcc
                 console.log(error.response.status);
             }
         }
+        setSaveDisabled(true);
     }
 
     return (
         <View style={styles.container}>
-            <Modal backdropStyle={styles.backdrop} onBackdropPress={() => setModalVisible(false)} visible={modalVisible}>
+            <Modal backdropStyle={styles.backdrop} onBackdropPress={() => {setModalVisible(false); setSaveDisabled(true);}} visible={modalVisible}>
                 <View style={styles.modal}>
-                    <Text style={styles.modalText}>
-                        {selectedParameter.description}: od
-                        <Text style={styles.modalAltText}> {sliderValue[0]}{selectedParameter.unit} </Text>do 
-                        <Text style={styles.modalAltText}> {sliderValue[1]}{selectedParameter.unit} </Text>
-                    </Text>
-                    <Slider
-                        value={sliderValue}
-                        onValueChange={value => { setSliderValue(value); createUpdateRequest()}}
-                        minimumValue={0}
-                        maximumValue={selectedParameter.name === 'light' ? 100 : 40}
-                        step={1}
-                        disabled={status === 'wiki' || fullAccess === 'view'}
-                    />
-                    <Text style={styles.modalText}>Aktualnie: <Text style={styles.modalAltText}>{actualValue}{selectedUnit} </Text></Text>
-                    <Slider
-                        value={actualValue}
-                        onValueChange={value => { setActualValue(value); createUpdateRequest()}}
-                        minimumValue={0}
-                        maximumValue={selectedParameter.name === 'light' ? 100 : 40}
-                        step={1}
-                        disabled={status === 'wiki' || fullAccess === 'view'}
-                    />
-                    <View style={{ flex: 1, flexDirection: 'row', marginTop: spacing.sm }}>
-                        {/* <Button onPress={() => setModalVisible(false)} style={{ flex: 1, marginRight: spacing.xs }} disabled={!selectedParameter.modified || status === 'wiki' || fullAccess === 'view'}>
-                            PRZYWRÓĆ
-                        </Button> */}
-                        <Button onPress={() => updatePlant()} style={{ flex: 1, marginLeft: spacing.xs }} disabled={saveDisabled || status === 'wiki' || fullAccess === 'view'}>
-                            ZAPISZ
-                        </Button>
+                    <View style={{padding: spacing.sm}}>
+                        <Text style={styles.modalText}>
+                            {selectedParameter.description}: od
+                            <Text style={styles.modalAltText}> {sliderValue[0]}{selectedParameter.unit} </Text>do 
+                            <Text style={styles.modalAltText}> {sliderValue[1]}{selectedParameter.unit} </Text>
+                        </Text>
+                        <Slider
+                            value={sliderValue}
+                            onValueChange={value => { setSliderValue(value); setSaveDisabled(false); }}
+                            minimumValue={0}
+                            maximumValue={selectedParameter.name === 'light' ? 100 : 40}
+                            step={1}
+                            disabled={status === 'wiki' || fullAccess === 'view'}
+                        />
+                        <Text style={styles.modalText}>Aktualnie: <Text style={styles.modalAltText}>{actualValue}{selectedUnit} </Text></Text>
+                        <Slider
+                            value={actualValue}
+                            onValueChange={value => { setActualValue(value); setSaveDisabled(false); }}
+                            minimumValue={0}
+                            maximumValue={selectedParameter.name === 'light' ? 100 : 40}
+                            step={1}
+                            disabled={status === 'wiki' || fullAccess === 'view'}
+                        />
+                        <View style={{ flex: 1, flexDirection: 'row', marginTop: spacing.sm }}>
+                            <Button onPress={() => updatePlant()} style={{ flex: 1, marginLeft: spacing.xs }} disabled={saveDisabled || status === 'wiki' || fullAccess === 'view'}>
+                                ZAPISZ
+                            </Button>
+                        </View>
                     </View>
+                    <LoadingBlur isFetching={isFetchingData} />
                 </View>
             </Modal>
             <TouchableOpacity activeOpacity={1} style={styles.header} onPress={() => onTouchCategory(undefined)}>
@@ -508,7 +522,7 @@ const styles = StyleSheet.create({
     modal: {
         width: Dimensions.get('screen').width * 0.8,
         backgroundColor: colors.appLightBackground,
-        padding: spacing.sm,
+        // padding: spacing.sm,
         borderRadius: rounding.xs,
         elevation: 20,
     },

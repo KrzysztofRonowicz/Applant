@@ -168,12 +168,12 @@ const Chat = ({ navigation }) => {
             <Layout style={styles.layout}>
                 <View style={styles.header}>
                     <Text style={styles.title}>Wiadomości</Text>
-                    <Tooltip
+                    {/* <Tooltip
                         anchor={renderToggleButton}
                         visible={visible}
                         onBackdropPress={() => setVisible(false)}>
                         Dostępne wkrótce!
-                    </Tooltip>
+                    </Tooltip> */}
                 </View>
                 {isLoading ? <LoadingScreen/>: 
                 <FlatList
@@ -198,8 +198,8 @@ const styles = StyleSheet.create({
     layout: {
         flex: 1,
         backgroundColor: '#F8F8F8',
-        borderTopWidth: 1,
-        borderTopColor: '#DCDCDC',
+        // borderTopWidth: 1,
+        // borderTopColor: '#DCDCDC',
         paddingHorizontal: spacing.md,
         paddingTop: spacing.sm
     },

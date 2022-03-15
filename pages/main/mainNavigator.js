@@ -40,10 +40,10 @@ const MainNavigator = () => {
 									iconName = 'search';
 								}
 								else if (route.name === 'Chat') {
-									iconName = 'chat';
+									iconName = 'mail-outline';
 								}
 								else if (route.name === 'Account') {
-									iconName = 'person';
+									iconName = 'person-outline';
 								}
 								return <Icon type='material' name={iconName} color={color} size={26}/>
 							},

@@ -6,6 +6,7 @@ import { Icon } from 'react-native-elements';
 import Plant from './plant';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as API from '../../api/apiMethods';
+import Toast from 'react-native-toast-message';
 
 const DirectedMessage = ({message, sender, user}) => {
     const setDirection = () => {
@@ -120,8 +121,17 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
         };
     }, []);
 
+    const showCopyToast = () => {
+        Toast.show({
+            type: 'success',
+            text1: 'Skopiowano roślinę!',
+            text2: 'Skopiowano nową roślinę do Twojej kolekcji!'
+        });
+    }
+
     const onModalClose = () => {
         setCollectionModalVisible(false);
+        showCopyToast();
     }
 
     const onPlantDetails = () => {
@@ -174,7 +184,6 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
     }
 
     async function addPlantToUser() {
-        console.log('trying copy' + ad.plant_id);
         try {
             const response = await API.copyUserPlant(ad.plant_id, {
                 headers: {
@@ -183,9 +192,7 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
                 }
             });
             if (response.status === 200) {
-                console.log('!!!!!!!!!!!!!!');
                 setNewPlantId(response.data.userPlant);
-                console.log(response.data.userPlant, newPlantId, collections);
                 setCollectionModalVisible(true);
             }
         } catch (error) {
@@ -323,6 +330,7 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
 
     return(
         plantVisible ? <Plant onClose={onPlantDetails} plantId={ad.plant_id} status={'ad'} label={true}/> :
+        <>
         <Layout style={styles.layout}>
             <Modal onBackdropPress={() => setCollectionModalVisible(false)} visible={collectionModalVisible}>
                 <AdToCollectionModal plantId={newPlantId} collections={collections} onClose={onModalClose} />
@@ -346,7 +354,7 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
                         onSelect={index => onMenuItemSelect(index.row)}
                         onBackdropPress={() => setOverflowVisible(false)}>
                         <MenuItem title='Szczegóły' />
-                        {owner_id !== userId ? <MenuItem title='Kopiuj profil'/> : <></>}
+                        <MenuItem title='Kopiuj profil'/>
                         <MenuItem title='Usuń konwersację' />
                     </OverflowMenu>
                 </View>
@@ -380,6 +388,8 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
                 <RenderSendIcon/>
             </View>
         </Layout>
+        <Toast/>
+        </>
     ); 
 }
 

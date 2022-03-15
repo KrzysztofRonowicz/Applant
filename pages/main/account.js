@@ -31,8 +31,8 @@ const Account = () => {
                 flex: 1,
                 justifyContent: 'space-between',
                 backgroundColor: '#F8F8F8',
-                borderTopWidth: 1,
-                borderTopColor: '#DCDCDC',
+                // borderTopWidth: 1,
+                // borderTopColor: '#DCDCDC',
                 padding: spacing.md,
                 paddingTop: spacing.sm,
             }}
