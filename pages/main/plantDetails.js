@@ -91,8 +91,8 @@ const IndicatorValue = ({value, dark, care, temperature}) => {
 
 const i18n = {
     dayNames: {
-        short: ['Pn', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Niedz'],
-        long: ['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota', 'Niedziela'],
+        short: ['Niedz', 'Pn', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob'],
+        long: ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'],
     },
     monthNames: {
         short: ['St', 'Lut', 'Mrz', 'Kw', 'Maj', 'Cz', 'Lip', 'Sier', 'Wrz', 'Paź', 'Lis', 'Gr'],
@@ -113,7 +113,7 @@ const i18n = {
     },
 };
 
-const localeDateService = new NativeDateService('pl', { i18n, startDayOfWeek: 0 });
+const localeDateService = new NativeDateService('pl', { i18n, startDayOfWeek: 1 });
 
 export function sameDay(d1, d2) {
     return d1.getFullYear() === d2.getFullYear() &&

@@ -63,8 +63,8 @@ const Search = ({route, navigation}) => {
     const [responseMarketData, setResponseMarketData] = useState([]);
 
     useEffect(() => {
-        searchPlant(inputValue);
-        searchMarketPlant(inputValue, Od, Do);
+        searchPlant(inputValue, selectedSort);
+        searchMarketPlant(inputValue, Od, Do, selectedSort);
     }, []);
 
     useFocusEffect(
@@ -73,6 +73,7 @@ const Search = ({route, navigation}) => {
             return () => {
                 setTimeout(() => {
                     setPlantVisible(false);
+                    setMarketVisible(false);
                 }, 100);
             };
         }, [])
@@ -104,10 +105,10 @@ const Search = ({route, navigation}) => {
     async function onPrizeChanged(text, name) {
         if (text !== '' || text !== '0' && text !== '00' && text.toString() !== '000') {
             if (name === 'od') {
-                if (Number(Do) >= Number(text)) { await setOd(text.replace(/[^0-9]/g, '')); searchMarketPlant(inputValue, text, Do)};
+                if (Number(Do) >= Number(text)) { await setOd(text.replace(/[^0-9]/g, '')); searchMarketPlant(inputValue, text, Do, selectedSort)};
             }
             if (name === 'do') {
-                if (Number(Od) <= Number(text)) { await setDo(text.replace(/[^0-9]/g, '')); searchMarketPlant(inputValue, Od, text)};
+                if (Number(Od) <= Number(text)) { await setDo(text.replace(/[^0-9]/g, '')); searchMarketPlant(inputValue, Od, text, selectedSort)};
             }
         } else {
             if (name === 'od') {
@@ -181,7 +182,9 @@ const Search = ({route, navigation}) => {
                         { latitude: responseData[index].latitude, longitude: responseData[index].longitude }
                     );
                     if (distance <= slider[0] * 1000) {
-                        tmpResponseData.push(responseData[index]);
+                        let tmpPlant = responseData[index];
+                        tmpPlant.distance = distance;
+                        tmpResponseData.push(tmpPlant);
                     }
                 }
             }
@@ -191,19 +194,91 @@ const Search = ({route, navigation}) => {
         }
     }
 
+    async function sortResponseData(responseData, parameter) {
+        if (marketVisible) {
+            if (parameter === 'Rosnąco') {
+                return responseData.sort(
+                    function (a, b) {
+                        return a.prize - b.prize;
+                    }
+                );
+            }
+            if (parameter === 'Rosnąco') {
+                return responseData.sort(
+                    function (a, b) {
+                        return a.prize - b.prize;
+                    }
+                );
+            }
+            if (parameter === 'Dalej') {
+                return responseData.sort(
+                    function (a, b) {
+                        return b.distance - a.distance;
+                    }
+                );
+            }
+            if (parameter === 'Bliżej') {
+                return responseData.sort(
+                    function (a, b) {
+                        return a.distance - b.distance;
+                    }
+                );
+            }
+        }
+        if (parameter === 'Łatwiejsze') {
+            return responseData.sort(
+                function (a, b) {
+                    const diffA = a.water_index + a.light_index + a.compost_index;
+                    const diffB = b.water_index + b.light_index + b.compost_index;
+                    return diffA - diffB;
+                }
+            );
+        }
+        if (parameter === 'Trudniejsze') {
+            return responseData.sort(
+                function (a, b) {
+                    const diffA = a.water_index + a.light_index + a.compost_index;
+                    const diffB = b.water_index + b.light_index + b.compost_index;
+                    return diffB - diffA;
+                }
+            );
+        }
+        if (parameter === 'A-Z') {
+            return responseData.sort(
+                function (a, b) {
+                    const x = a.name.toLowerCase();
+                    const y = b.name.toLowerCase();
+                    return x < y ? -1 : x > y ? 1 : 0;
+                }
+            );
+        }
+        if (parameter === 'Z-A') {
+            return responseData.sort(
+                function (a, b) {
+                    const x = a.name.toLowerCase();
+                    const y = b.name.toLowerCase();
+                    return x > y ? -1 : x < y ? 1 : 0;
+                }
+            );
+        }
+        return responseData;
+    }
+
     const onRadioChange = (state) => {
         setMarketVisible(state);
         if (state) {
-            searchMarketPlant(inputValue, Od, Do);
+            searchMarketPlant(inputValue, Od, Do, selectedSort);
         } else {
-            searchPlant(inputValue);
+            searchPlant(inputValue, selectedSort);
         }
     }
 
     const onSortSelect = (name) => {
         if (selectedSort === name) {
             setSelectedSort('');
+            marketVisible ? searchMarketPlant(inputValue, Od, Do, '') : searchPlant(inputValue, '');
         } else {
+            marketVisible ? searchMarketPlant(inputValue, Od, Do, name) : searchPlant(inputValue, name);
             setSelectedSort(name);
         }
     };
@@ -228,7 +303,7 @@ const Search = ({route, navigation}) => {
     const renderItem = ({ item }) => (
         <PlantAd 
             _id={item._id}
-            name={item.species_name} 
+            name={item.name} 
             image={getImageUrl(item.image)} 
             water_index={item.water_index} 
             light_index={item.light_index} 
@@ -251,7 +326,8 @@ const Search = ({route, navigation}) => {
         );
     } 
 
-    async function searchPlant(nextValue){
+    async function searchPlant(nextValue, sortType){
+        setResponseMarketData([]);
         setInputValue(nextValue);
         setIsFetchingData(true);
         try {
@@ -264,7 +340,9 @@ const Search = ({route, navigation}) => {
                 if (response.data === []) {
                     setResponseData([]);
                 } else {
-                    setResponseData(response.data);
+                    const data = await sortResponseData(response.data, sortType);
+                    setResponseData(data);
+                    // console.log(response.data);
                     setIsFetchingData(false);
                 }
             }
@@ -275,7 +353,7 @@ const Search = ({route, navigation}) => {
         }
     };
 
-    async function searchMarketPlant(nextValue, Od, Do) {
+    async function searchMarketPlant(nextValue, Od, Do, sortType) {
         setInputValue(nextValue);
         setIsFetchingData(true);
         try {
@@ -285,9 +363,11 @@ const Search = ({route, navigation}) => {
                 }
             });
             if (response.status === 200) {
+                console.log(response.data);
                 let data = filterPrizeResponseData(response.data, Od, Do);
                 try {
                     data = await filterDistanceResponseData(data);
+                    data = await sortResponseData(data, sortType);
                     setResponseMarketData(data);
                     setIsFetchingData(false);
                 } catch (error) {
@@ -325,7 +405,7 @@ const Search = ({route, navigation}) => {
                 textStyle={{...labels.qsp}}
                 size='large'
                 placeholder={marketVisible ? 'Szukaj ogłoszenia' : 'Szukaj rośliny'}
-                onChangeText={nextValue => marketVisible ? searchMarketPlant(nextValue, Od, Do) : searchPlant(nextValue)}
+                onChangeText={nextValue => marketVisible ? searchMarketPlant(nextValue, Od, Do, selectedSort) : searchPlant(nextValue, selectedSort)}
             />
             <View style={styles.filterSortContainer}>
                 <View style={{ flexDirection: 'row' }}>
@@ -387,8 +467,8 @@ const Search = ({route, navigation}) => {
                         <Slider
                             containerStyle={{ flex: 1, marginHorizontal: spacing.xs }}
                             value={slider}
-                            onValueChange={value => setSlider(value)}
-                            onSlidingComplete={() => searchMarketPlant(inputValue, Od, Do) }
+                            onValueChange={value => { setSlider(value)}}
+                            onSlidingComplete={() => { setIsFetchingData(true); searchMarketPlant(inputValue, Od, Do, selectedSort)} }
                             minimumValue={1}
                             maximumValue={50}
                             step={1}
@@ -399,8 +479,9 @@ const Search = ({route, navigation}) => {
             </View> : <></>
             }
             {!filterVisible && sortVisible?
-                <View style={[styles.filterSortParameterContainer]}>
-                    <View style={{flexDirection: 'row'}}>
+                <View style={[styles.filterSortParameterContainer, marketVisible ? {height: 150} : {height: 75}]}>
+                    {marketVisible ? 
+                    <View style={{ flexDirection: 'row' }}>
                         <View style={{ flex: 5 }}>
                             <Text style={{ ...labels.qsp, color: colors.greenDark, textAlign: 'center' }}>Cena</Text>
                             <View style={{ flexDirection: 'row', paddingTop: 10, paddingBottom: 5, justifyContent: 'center' }}>
@@ -410,50 +491,52 @@ const Search = ({route, navigation}) => {
                         </View>
                         <View style={{ flex: 4 }}>
                             <Text style={{ ...labels.qsp, color: colors.greenDark, textAlign: 'center' }}>Odległość</Text>
-                                <View style={{ flexDirection: 'row', paddingTop: 10, paddingBottom: 5, justifyContent: 'center' }}>
+                            <View style={{ flexDirection: 'row', paddingTop: 10, paddingBottom: 5, justifyContent: 'center' }}>
                                 <Parameter text='Dalej' checked={false} />
                                 <Parameter text='Bliżej' checked={true} />
                             </View>
                         </View>
-                    </View>
-                        <View style={{ flexDirection: 'row', marginBottom: 5 }}>
-                            <View style={{ flex: 5 }}>
-                                <Text style={{ ...labels.qsp, color: colors.greenDark, textAlign: 'center' }}>Trudność</Text>
-                                <View style={{ flexDirection: 'row', paddingTop: 10, paddingBottom: 5, justifyContent: 'center' }}>
-                                    <Parameter text='Łatwiejsze' checked={false} />
-                                    <Parameter text='Trudniejsze' checked={false} />
-                                </View>
-                            </View>
-                            <View style={{ flex: 4 }}>
-                                <Text style={{ ...labels.qsp, color: colors.greenDark, textAlign: 'center' }}>Alfabetycznie</Text>
-                                <View style={{ flexDirection: 'row', paddingTop: 10, paddingBottom: 5, justifyContent: 'center' }}>
-                                    <Parameter text='A-Z' checked={false} />
-                                    <Parameter text='Z-A' checked={true} />
-                                </View>
+                    </View> : <></>
+                    }
+                    <View style={{ flexDirection: 'row', marginBottom: 5 }}>
+                        <View style={{ flex: 5 }}>
+                            <Text style={{ ...labels.qsp, color: colors.greenDark, textAlign: 'center' }}>Trudność</Text>
+                            <View style={{ flexDirection: 'row', paddingTop: 10, paddingBottom: 5, justifyContent: 'center' }}>
+                                <Parameter text='Łatwiejsze' checked={false} />
+                                <Parameter text='Trudniejsze' checked={false} />
                             </View>
                         </View>
+                        <View style={{ flex: 4 }}>
+                            <Text style={{ ...labels.qsp, color: colors.greenDark, textAlign: 'center' }}>Alfabetycznie</Text>
+                            <View style={{ flexDirection: 'row', paddingTop: 10, paddingBottom: 5, justifyContent: 'center' }}>
+                                <Parameter text='A-Z' checked={false} />
+                                <Parameter text='Z-A' checked={true} />
+                            </View>
+                        </View>
+                    </View>
                 </View> : <></>
             }
-            <FlatList
-                data={marketVisible ? responseMarketData : responseData}
-                renderItem={marketVisible ? renderMarketItem : renderItem}
-                numColumns={2}
-                columnWrapperStyle={{justifyContent: 'space-between'}}
-                keyExtractor={item => item._id}
-                showsVerticalScrollIndicator={false}
-                ListEmptyComponent={
-                    isFetchingData ? <LoadingBlur isFetching={true}/> :
-                    <View style={{ justifyContent: 'center', flex: 1, alignItems: 'center', marginTop: -50 }}>
-                        <View>
-                            <LottieView style={{ height: 200 }} source={require('../../assets/lottie/61372-404-error-not-found.json')} autoPlay loop /> 
-                        </View>
-                        <View style={{ marginTop: spacing.sm, alignItems: 'center' }}>
-                            <Text style={{ ...labels.qsp, fontWeight: 'bold' }}>Nie znaleziono :(</Text>
-                            <Text style={{ ...labels.qsp, textAlign: 'center' }}>Spróbuj innych parametrów lub nazwy</Text>
-                        </View>
-                    </View>}
-                contentContainerStyle={{ flexGrow: 1 }}
-            />
+            {isFetchingData ? <View style={{flex: 1}}><LoadingBlur isFetching={true}/></View> : 
+                <FlatList
+                    data={marketVisible ? responseMarketData : responseData}
+                    renderItem={marketVisible ? renderMarketItem : renderItem}
+                    numColumns={2}
+                    columnWrapperStyle={{justifyContent: 'space-between'}}
+                    keyExtractor={item => item._id}
+                    showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                        <View style={{ justifyContent: 'center', flex: 1, alignItems: 'center', marginTop: -50 }}>
+                            <View>
+                                <LottieView style={{ height: 200 }} source={require('../../assets/lottie/61372-404-error-not-found.json')} autoPlay loop /> 
+                            </View>
+                            <View style={{ marginTop: spacing.sm, alignItems: 'center' }}>
+                                <Text style={{ ...labels.qsp, fontWeight: 'bold' }}>Nie znaleziono :(</Text>
+                                <Text style={{ ...labels.qsp, textAlign: 'center' }}>Spróbuj innych parametrów lub nazwy</Text>
+                            </View>
+                        </View>}
+                    contentContainerStyle={{ flexGrow: 1 }}
+                />
+            }
         </Layout>
     ); 
 }
@@ -532,8 +615,10 @@ const styles = StyleSheet.create({
     },
     name: {
         ...labels.qsm,
-        alignSelf: 'center',
+        // alignSelf: 'center',
+        textAlign: 'center',
         paddingHorizontal: spacing.xs,
+
     },
     filterSortParameterContainer: {
         borderRadius: rounding.sm,
@@ -541,7 +626,6 @@ const styles = StyleSheet.create({
         // borderWidth: 2,
         // borderColor: colors.greenDark,
         width: '100%',
-        height: 150,
         marginBottom: spacing.sm,
         paddingHorizontal: spacing.sm,
         paddingVertical: 5,

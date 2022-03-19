@@ -14,7 +14,7 @@ export const login = `${userUri}/login`;
 export const updateLocation = `${userUri}/location`; 
 
 export const plant = (_id) => `${plantUri}/?_id=${_id}`;
-export const searchPlants = (species_name) => `${plantUri}/search?species_name=${species_name}`;
+export const searchPlants = (name) => `${plantUri}/search?name=${name}`;
 
 export const userPlant = (_id) => `${userPlantUri}/?_id=${_id}`;
 export const copyUserPlant = (plant_id) => `${userPlantUri}/copy?plant_id=${plant_id}`;

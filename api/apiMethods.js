@@ -17,8 +17,8 @@ export const getPlant = (_id, data) => {
 		data
 	);
 };
-export const searchPlants = (species_name, data) => {
-	return axios.get(URI.searchPlants(species_name),
+export const searchPlants = (name, data) => {
+	return axios.get(URI.searchPlants(name),
 		data,
 	);
 };
