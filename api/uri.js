@@ -11,6 +11,7 @@ const conversationUri = `${hostUri}/conversation`;
 
 export const register = `${userUri}/register`;
 export const login = `${userUri}/login`;
+export const updateLocation = `${userUri}/location`; 
 
 export const plant = (_id) => `${plantUri}/?_id=${_id}`;
 export const searchPlants = (species_name) => `${plantUri}/search?species_name=${species_name}`;

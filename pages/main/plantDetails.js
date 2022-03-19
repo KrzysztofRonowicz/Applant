@@ -122,7 +122,7 @@ export function sameDay(d1, d2) {
 }
 
 export function sameLessDay(d1, d2) {
-    return d1.toDateString() <= d2.toDateString();
+    return d1.toLocaleDateString() <= d2.toLocaleDateString();
 }
 
 export const Care = ({ onTouchCategory, plantId, careData, status, fullAccess }) => {

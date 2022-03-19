@@ -152,3 +152,9 @@ export const removeUserPlant = (_id, data) => {
 		data
 	);
 };
+export const updateLocation = (data, headers) => {
+	return axios.put(URI.updateLocation,
+		data,
+		headers
+	);
+};

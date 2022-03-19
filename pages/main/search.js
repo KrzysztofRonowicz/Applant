@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Text, Input, Radio, Tooltip } from '@ui-kitten/components';
+import { Layout, Text, Input, Radio, Tooltip, OverflowMenu, MenuItem } from '@ui-kitten/components';
 import { Icon } from 'react-native-elements'
-import Plant from './plant';
+import Plant, { LoadingBlur } from './plant';
 import { StyleSheet, TouchableOpacity, View, FlatList, Dimensions, Image } from 'react-native';
 import { colors, labels, spacing, rounding } from '../../style/base';
 import { alertsImages } from '../../assets/alerts/alertsImages';
@@ -9,6 +9,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as API from '../../api/apiMethods';
 import LottieView from 'lottie-react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Slider } from '@miblanchard/react-native-slider';
+import { getDistance } from 'geolib';
+import * as Location from 'expo-location';
 
 const PlantAdParameters = ({ prize, water_index, light_index, compost_index }) => {
     return (
@@ -41,13 +44,18 @@ const PlantAd = ({ _id, name, image, water_index, light_index, compost_index, pr
 
 const Search = ({route, navigation}) => {
     const [inputValue, setInputValue] = useState('');
-    const [visibleFilters, setVisibleFilters] = useState(false);
-    const [visibleSort, setVisibleSort] = useState(false);
-    const [filters, setFilters] = useState(null);
-    const [sort, setSort] = useState(null);
+    const [isFetchingData, setIsFetchingData] = useState(false);
+    const [Od, setOd] = useState(null);
+    const [Do, setDo] = useState(null);
     const [marketVisible, setMarketVisible] = useState(false);
     const [selectedPlant, setSelectedPlant] = useState([]);
     const [plantVisible, setPlantVisible] = useState(false);
+    const [slider, setSlider] = useState([50]);
+
+    const [filterVisible, setFilterVisible] = useState(false);
+    const [sortVisible, setSortVisible] = useState(false);
+
+    const [selectedSort, setSelectedSort] = useState('');
 
     const {collection_id = null, collection_name = null} = route.params ?? {};
 
@@ -56,8 +64,8 @@ const Search = ({route, navigation}) => {
 
     useEffect(() => {
         searchPlant(inputValue);
-        searchMarketPlant(inputValue);
-    }, [marketVisible]);
+        searchMarketPlant(inputValue, Od, Do);
+    }, []);
 
     useFocusEffect(
         React.useCallback(() => {
@@ -70,14 +78,134 @@ const Search = ({route, navigation}) => {
         }, [])
     );
 
-    const onFilterSelect = (index) => {
-        setFilters(index);
-        setVisibleFilters(false);
+    const onParameterSelect = (state, name) => {
+        if (!state) {
+            setFilterVisible(false);
+            setSortVisible(false);
+        }
+        if (name === 'filter' && state && !sortVisible) {
+            setFilterVisible(true);
+        }
+        if (name === 'sort' && state && !filterVisible) {
+            setSortVisible(true);
+        }
+        if (state) {
+            if (filterVisible) {
+                setFilterVisible(false);
+                setSortVisible(true);
+            }
+            if (sortVisible) {
+                setFilterVisible(true);
+                setSortVisible(false);
+            }
+        } 
     };
 
-    const onSortSelect = (index) => {
-        setSort(index);
-        setVisibleSort(false);
+    async function onPrizeChanged(text, name) {
+        if (text !== '' || text !== '0' && text !== '00' && text.toString() !== '000') {
+            if (name === 'od') {
+                if (Number(Do) >= Number(text)) { await setOd(text.replace(/[^0-9]/g, '')); searchMarketPlant(inputValue, text, Do)};
+            }
+            if (name === 'do') {
+                if (Number(Od) <= Number(text)) { await setDo(text.replace(/[^0-9]/g, '')); searchMarketPlant(inputValue, Od, text)};
+            }
+        } else {
+            if (name === 'od') {
+                setOd(null);
+            }
+            if (name === 'do') {
+                setDo(null);
+            }
+        }
+    }
+
+    const filterPrizeResponseData = (responseData, Od, Do) => {
+        setIsFetchingData(true);
+        if (Do) {
+            let tmpResponseData = [];
+            let tmpOd;
+            if (Od == null) {tmpOd = 0;} else {tmpOd = Od};
+            for (let index = 0; index < responseData.length; index++) {
+                const prize = Number(responseData[index].prize);
+                if (prize >= Number(tmpOd) && prize <= Number(Do)) {
+                    tmpResponseData.push(responseData[index]);
+                }
+            }
+            return tmpResponseData;
+        } else {
+            return responseData;
+        }
+    }
+
+    async function getCoordinates() {
+        setIsFetchingData(true);
+        let location;
+        try {
+            location = await Location.getCurrentPositionAsync({});
+            return { latitude: JSON.parse(location.coords.latitude), longitude: JSON.parse(location.coords.longitude) }
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    async function getLocalizationEnabled() {
+        setIsFetchingData(true);
+        try {
+            const enabled = await AsyncStorage.getItem('localization_enabled');
+            return enabled;
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    async function filterDistanceResponseData (responseData) {
+        setIsFetchingData(true);
+        let localization_enabled;
+        try {
+            localization_enabled = await getLocalizationEnabled();
+        } catch (error) {
+            console.log(error);
+        }
+        if (localization_enabled === 'true') {
+            let tmpResponseData = [];
+            let position;
+            try {
+                position = await getCoordinates();
+            } catch (error) {
+                console.log(error);
+            }
+            for (let index = 0; index < responseData.length; index++) {
+                if (responseData[index].latitude && responseData[index].longitude) {
+                    const distance = getDistance(
+                        { latitude: position.latitude, longitude: position.longitude },
+                        { latitude: responseData[index].latitude, longitude: responseData[index].longitude }
+                    );
+                    if (distance <= slider[0] * 1000) {
+                        tmpResponseData.push(responseData[index]);
+                    }
+                }
+            }
+            return tmpResponseData;
+        } else {
+            return responseData;
+        }
+    }
+
+    const onRadioChange = (state) => {
+        setMarketVisible(state);
+        if (state) {
+            searchMarketPlant(inputValue, Od, Do);
+        } else {
+            searchPlant(inputValue);
+        }
+    }
+
+    const onSortSelect = (name) => {
+        if (selectedSort === name) {
+            setSelectedSort('');
+        } else {
+            setSelectedSort(name);
+        }
     };
 
     const onPlantSelect = (id, adId, name, prize, image) => {
@@ -113,20 +241,19 @@ const Search = ({route, navigation}) => {
         <PlantAd _id={item.plant_id} name={item.name} rawImage={item.image} image={getImageUrl(item.image)} prize={item.prize} onPlantSelect={onPlantSelect} adId={item._id}/>
     );
 
-    const filterButon = () => (
-        <TouchableOpacity onPress={() => setVisibleFilters(true)}>
-            <Icon type='material' name='filter-list' size={26} color={colors.greenDark} />
-        </TouchableOpacity>
-    );
-
-    const sortButon = () => (
-        <TouchableOpacity onPress={() => setVisibleSort(true)}>
-            <Icon type='material' name='sort' size={26} color={colors.greenDark} />
-        </TouchableOpacity>
-    );
+    const Parameter = ({text}) => {
+        return(
+            <TouchableOpacity activeOpacity={1} onPress={() => onSortSelect(text)}>
+                <View style={[styles.parameterButton, selectedSort === text ? { backgroundColor: colors.greenDark } : { backgroundColor: colors.appLightBackground }]}>
+                    <Text style={[{ ...labels.qxs, fontWeight: 'bold' }, selectedSort === text ? { color: colors.white } : { color: colors.greenDark }]}>{text}</Text>
+                </View>
+            </TouchableOpacity>
+        );
+    } 
 
     async function searchPlant(nextValue){
         setInputValue(nextValue);
+        setIsFetchingData(true);
         try {
             let response = await API.searchPlants( nextValue ,{
                 headers: {
@@ -138,6 +265,7 @@ const Search = ({route, navigation}) => {
                     setResponseData([]);
                 } else {
                     setResponseData(response.data);
+                    setIsFetchingData(false);
                 }
             }
         } catch (error) {
@@ -147,8 +275,9 @@ const Search = ({route, navigation}) => {
         }
     };
 
-    async function searchMarketPlant(nextValue) {
+    async function searchMarketPlant(nextValue, Od, Do) {
         setInputValue(nextValue);
+        setIsFetchingData(true);
         try {
             let response = await API.searchAds(nextValue, {
                 headers: {
@@ -156,7 +285,14 @@ const Search = ({route, navigation}) => {
                 }
             });
             if (response.status === 200) {
-                setResponseMarketData(response.data);
+                let data = filterPrizeResponseData(response.data, Od, Do);
+                try {
+                    data = await filterDistanceResponseData(data);
+                    setResponseMarketData(data);
+                    setIsFetchingData(false);
+                } catch (error) {
+                    console.log(error);
+                }
             }
         } catch (error) {
             if (error.response.status === 400) {
@@ -189,7 +325,7 @@ const Search = ({route, navigation}) => {
                 textStyle={{...labels.qsp}}
                 size='large'
                 placeholder={marketVisible ? 'Szukaj ogłoszenia' : 'Szukaj rośliny'}
-                onChangeText={nextValue => marketVisible ? searchMarketPlant(nextValue) : searchPlant(nextValue)}
+                onChangeText={nextValue => marketVisible ? searchMarketPlant(nextValue, Od, Do) : searchPlant(nextValue)}
             />
             <View style={styles.filterSortContainer}>
                 <View style={{ flexDirection: 'row' }}>
@@ -197,51 +333,107 @@ const Search = ({route, navigation}) => {
                     <Radio
                         checked={marketVisible}
                         onChange={nextChecked => {
-                            setMarketVisible(nextChecked);
+                            setFilterVisible(false);
+                            setSortVisible(false);
+                            onRadioChange(nextChecked);
                         }}>
                     </Radio>
                 </View>
                 <View style={{flexDirection: 'row'}}>
-                    <View style={styles.filterSort}>
-                        <Text style={styles.filterSortLabel}>Filtruj</Text>
-                        {/* <OverflowMenu
-                            anchor={filterButon}
-                            visible={visibleFilters}
-                            selectedIndex={filters}
-                            onSelect={onFilterSelect}
-                            onBackdropPress={() => setVisibleFilters(false)}>
-                            <MenuItem title='Users' />
-                            <MenuItem title='Orders' />
-                            <MenuItem title='Transactions' />
-                        </OverflowMenu> */}
-                            <Tooltip
-                                anchor={filterButon}
-                                visible={visibleFilters}
-                                onBackdropPress={() => setVisibleFilters(false)}>
-                                Dostępne wkrótce!
-                            </Tooltip>
+                    <View style={[styles.filterSort, filterVisible ? {borderBottomWidth: 2, borderBottomColor: colors.greenDark} : <></>]}>
+                        <TouchableOpacity disabled={!marketVisible} activeOpacity={1} style={[{flexDirection: 'row'}, marketVisible ? {} : {opacity: .5}]} 
+                        onPress={() => onParameterSelect(!filterVisible, 'filter')}>
+                            <Text style={styles.filterSortLabel}>Filtruj</Text>
+                            <Icon type='material' name='filter-list' size={26} color={colors.greenDark} />
+                        </TouchableOpacity>
                     </View>
-                    <View style={styles.filterSort}>
-                        <Text style={styles.filterSortLabel}>Sortuj</Text>
-                        {/* <OverflowMenu
-                            anchor={sortButon}
-                            visible={visibleSort}
-                            selectedIndex={sort}
-                            onSelect={onSortSelect}
-                            onBackdropPress={() => setVisibleSort(false)}>
-                            <MenuItem title='Users' />
-                            <MenuItem title='Orders' />
-                            <MenuItem title='Transactions' />
-                        </OverflowMenu> */}
-                            <Tooltip
-                                anchor={sortButon}
-                                visible={visibleSort}
-                                onBackdropPress={() => setVisibleSort(false)}>
-                                Dostępne wkrótce!
-                            </Tooltip>
+                        <View style={[styles.filterSort, sortVisible ? { borderBottomWidth: 2, borderBottomColor: colors.greenDark }: <></>]}>
+                            <TouchableOpacity activeOpacity={1} style={{ flexDirection: 'row' }} onPress={() => onParameterSelect(!sortVisible, 'sort')}>
+                            <Text style={styles.filterSortLabel}>Sortuj</Text>
+                            <Icon type='material' name='sort' size={26} color={colors.greenDark} />
+                        </TouchableOpacity>
                     </View>
                 </View> 
             </View>
+            {filterVisible && !sortVisible? 
+            <View style={styles.filterSortParameterContainer}>
+                <Text style={{ ...labels.qsp, color: colors.greenDark, textAlign: 'center' }}>Cena (zł)</Text>
+                <View style={{ flexDirection: 'row', paddingTop: 10, paddingBottom: 5, justifyContent: 'center' }}>
+                    <Input
+                        style={{ marginRight: spacing.sm, minWidth: 70, marginLeft: 5, elevation: 2 }}
+                        textStyle={{ ...labels.qsp }}
+                        size='small'
+                        placeholder={'0'}
+                        value={Od}
+                        keyboardType='numeric'
+                        onChangeText={(text) => onPrizeChanged(text, 'od')}
+                        maxLength={3}
+                    />
+                    <Text style={{ ...labels.qsp, color: colors.greenDark, alignSelf: 'center' }}>-</Text>
+                    <Input
+                        style={{ marginLeft: spacing.sm, minWidth: 70, elevation: 2 }}
+                        textStyle={{ ...labels.qsp }}
+                        size='small'
+                        placeholder={'999'}
+                        value={Do}
+                        keyboardType='numeric'
+                        onChangeText={(text) => onPrizeChanged(text, 'do')}
+                        maxLength={3}
+                    />
+                </View>
+                <View style={{ paddingTop: spacing.xs }}>
+                    <Text style={{ ...labels.qsp, color: colors.greenDark, textAlign: 'center' }}>Odległość: {slider} (km)</Text>
+                    <View style={{ flexDirection: 'row' }}>
+                        <Slider
+                            containerStyle={{ flex: 1, marginHorizontal: spacing.xs }}
+                            value={slider}
+                            onValueChange={value => setSlider(value)}
+                            onSlidingComplete={() => searchMarketPlant(inputValue, Od, Do) }
+                            minimumValue={1}
+                            maximumValue={50}
+                            step={1}
+                            thumbTintColor={colors.greenDark}
+                        />
+                    </View>
+                </View>
+            </View> : <></>
+            }
+            {!filterVisible && sortVisible?
+                <View style={[styles.filterSortParameterContainer]}>
+                    <View style={{flexDirection: 'row'}}>
+                        <View style={{ flex: 5 }}>
+                            <Text style={{ ...labels.qsp, color: colors.greenDark, textAlign: 'center' }}>Cena</Text>
+                            <View style={{ flexDirection: 'row', paddingTop: 10, paddingBottom: 5, justifyContent: 'center' }}>
+                                <Parameter text='Rosnąco' checked={false} />
+                                <Parameter text='Malejąco' checked={false} />
+                            </View>
+                        </View>
+                        <View style={{ flex: 4 }}>
+                            <Text style={{ ...labels.qsp, color: colors.greenDark, textAlign: 'center' }}>Odległość</Text>
+                                <View style={{ flexDirection: 'row', paddingTop: 10, paddingBottom: 5, justifyContent: 'center' }}>
+                                <Parameter text='Dalej' checked={false} />
+                                <Parameter text='Bliżej' checked={true} />
+                            </View>
+                        </View>
+                    </View>
+                        <View style={{ flexDirection: 'row', marginBottom: 5 }}>
+                            <View style={{ flex: 5 }}>
+                                <Text style={{ ...labels.qsp, color: colors.greenDark, textAlign: 'center' }}>Trudność</Text>
+                                <View style={{ flexDirection: 'row', paddingTop: 10, paddingBottom: 5, justifyContent: 'center' }}>
+                                    <Parameter text='Łatwiejsze' checked={false} />
+                                    <Parameter text='Trudniejsze' checked={false} />
+                                </View>
+                            </View>
+                            <View style={{ flex: 4 }}>
+                                <Text style={{ ...labels.qsp, color: colors.greenDark, textAlign: 'center' }}>Alfabetycznie</Text>
+                                <View style={{ flexDirection: 'row', paddingTop: 10, paddingBottom: 5, justifyContent: 'center' }}>
+                                    <Parameter text='A-Z' checked={false} />
+                                    <Parameter text='Z-A' checked={true} />
+                                </View>
+                            </View>
+                        </View>
+                </View> : <></>
+            }
             <FlatList
                 data={marketVisible ? responseMarketData : responseData}
                 renderItem={marketVisible ? renderMarketItem : renderItem}
@@ -250,13 +442,14 @@ const Search = ({route, navigation}) => {
                 keyExtractor={item => item._id}
                 showsVerticalScrollIndicator={false}
                 ListEmptyComponent={
+                    isFetchingData ? <LoadingBlur isFetching={true}/> :
                     <View style={{ justifyContent: 'center', flex: 1, alignItems: 'center', marginTop: -50 }}>
                         <View>
                             <LottieView style={{ height: 200 }} source={require('../../assets/lottie/61372-404-error-not-found.json')} autoPlay loop /> 
                         </View>
                         <View style={{ marginTop: spacing.sm, alignItems: 'center' }}>
                             <Text style={{ ...labels.qsp, fontWeight: 'bold' }}>Nie znaleziono :(</Text>
-                            <Text style={{ ...labels.qsp }}>Spróbuj innej nazwy</Text>
+                            <Text style={{ ...labels.qsp, textAlign: 'center' }}>Spróbuj innych parametrów lub nazwy</Text>
                         </View>
                     </View>}
                 contentContainerStyle={{ flexGrow: 1 }}
@@ -342,6 +535,25 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         paddingHorizontal: spacing.xs,
     },
+    filterSortParameterContainer: {
+        borderRadius: rounding.sm,
+        backgroundColor: colors.appLightBackground,
+        // borderWidth: 2,
+        // borderColor: colors.greenDark,
+        width: '100%',
+        height: 150,
+        marginBottom: spacing.sm,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 5,
+        elevation: 3
+    },
+    parameterButton: {
+        borderRadius: rounding.sm, 
+        paddingHorizontal: spacing.sm, 
+        paddingVertical: spacing.xs, 
+        elevation: 5,
+        marginHorizontal: 4,
+    }
 });
 
 export default Search;

@@ -85,6 +85,7 @@ const Login = ({navigation}) => {
                 AsyncStorage.setItem('user_id', response.data['user_id']);
                 AsyncStorage.setItem('user_name', response.data['user_name']);
                 AsyncStorage.setItem('user_email', response.data['user_email']);
+                AsyncStorage.setItem('localization_enabled', 'false');
                 context.setLoginState(true);
 			}
         } catch (error) {

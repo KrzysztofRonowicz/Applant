@@ -224,6 +224,8 @@ const styles = StyleSheet.create({
         padding: spacing.xs,
         flexDirection: 'row',
         marginBottom: spacing.sm,
+        marginHorizontal: 5,
+        elevation: 5,
     },
     ticketImage: {
         width: 80,
