@@ -342,7 +342,6 @@ const Search = ({route, navigation}) => {
                 } else {
                     const data = await sortResponseData(response.data, sortType);
                     setResponseData(data);
-                    // console.log(response.data);
                     setIsFetchingData(false);
                 }
             }
@@ -363,7 +362,6 @@ const Search = ({route, navigation}) => {
                 }
             });
             if (response.status === 200) {
-                console.log(response.data);
                 let data = filterPrizeResponseData(response.data, Od, Do);
                 try {
                     data = await filterDistanceResponseData(data);

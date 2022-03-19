@@ -15,7 +15,7 @@ const getImageUrl = (id) => {
     return 'https://drive.google.com/uc?id=' + id;
 };
 
-const PlantCard = ({plantData, insertPlantAbove, insertPlantBelow, onPlantSelect}) => {
+const PlantCard = ({plantData, insertPlantAbove, insertPlantBelow, onPlantSelect, count}) => {
     const [moveEnabled, setMoveEnabled] = useState(false);
     const [isFetchingData, setIsFetchingData] = useState(false);
 
@@ -27,7 +27,7 @@ const PlantCard = ({plantData, insertPlantAbove, insertPlantBelow, onPlantSelect
         <TouchableOpacity style={styles.collectionPlant} activeOpacity={.6} onLongPress={onMovePress} onPress={() => onPlantSelect(plantData._id)}>
             <Image source={{ uri: getImageUrl(plantData.image) }} style={styles.collectionPlantImage} />
             <Text numberOfLines={1} ellipsizeMode='tail' style={styles.collectionPlantName}>{plantData.name}</Text>
-            {moveEnabled ? isFetchingData ? <LoadingBlur isFetching={true}/> :
+            {moveEnabled && count > 1 ? isFetchingData ? <LoadingBlur isFetching={true}/> :
                 <View style={{ position: 'absolute', width: '100%', height: '100%' }}>
                     <TouchableOpacity 
                         style={{ 
@@ -65,19 +65,19 @@ const PlantCard = ({plantData, insertPlantAbove, insertPlantBelow, onPlantSelect
     );
 }
 
-const CollectionPlant = ({ plantData, onAddPlant, insertPlantAbove, insertPlantBelow, onPlantSelect }) => (
+const CollectionPlant = ({ plantData, onAddPlant, insertPlantAbove, insertPlantBelow, onPlantSelect, count }) => (
     plantData._id === 'New' ?
         <TouchableOpacity style={styles.collectionNewPlant} onPress={() => onAddPlant(plantData.collection_id, plantData.collection_name)}>
         <Icon type='material' name={'add-circle-outline'} size={40} color={colors.grayMedium} />
     </TouchableOpacity> :
-    <PlantCard plantData={plantData} insertPlantAbove={insertPlantAbove} insertPlantBelow={insertPlantBelow} onPlantSelect={onPlantSelect}/>
+    <PlantCard count={count} plantData={plantData} insertPlantAbove={insertPlantAbove} insertPlantBelow={insertPlantBelow} onPlantSelect={onPlantSelect}/>
 );
 
-const renderCollectionItem = ({ item, onAddPlant, insertPlantAbove, insertPlantBelow, onPlantSelect }) => (
-    <CollectionPlant plantData={item} onAddPlant={onAddPlant} insertPlantAbove={insertPlantAbove} insertPlantBelow={insertPlantBelow} onPlantSelect={onPlantSelect}/>
+const renderCollectionItem = ({ item, onAddPlant, insertPlantAbove, insertPlantBelow, onPlantSelect, count }) => (
+    <CollectionPlant count={count} plantData={item} onAddPlant={onAddPlant} insertPlantAbove={insertPlantAbove} insertPlantBelow={insertPlantBelow} onPlantSelect={onPlantSelect}/>
 );
 
-const Collection = ({ name, plants, collection_id, onAddPlant, onCollection, plantNumber, insertPlantAbove, insertPlantBelow, onPlantSelect }) => (
+const Collection = ({ name, plants, collection_id, onAddPlant, onCollection, plantNumber, insertPlantAbove, insertPlantBelow, onPlantSelect, count }) => (
     <View style={styles.collectionContainer}>
         <TouchableOpacity onPress={() => onCollection(collection_id, name, plantNumber)}>
             <Text
@@ -102,7 +102,8 @@ const Collection = ({ name, plants, collection_id, onAddPlant, onCollection, pla
                     item: item, 
                     insertPlantAbove: (data) => insertPlantAbove(collection_id, data),
                     insertPlantBelow: (data) => insertPlantBelow(collection_id, data),
-                    onPlantSelect: onPlantSelect
+                    onPlantSelect: onPlantSelect,
+                    count: count,
                 })}
             keyExtractor={item => item._id}
             showsHorizontalScrollIndicator={false}
@@ -265,6 +266,7 @@ const Collections = ({navigation}) => {
             onPlantSelect={onPlantSelect}
             insertPlantAbove={insertPlantAbove}
             insertPlantBelow={insertPlantBelow}
+            count={collections.length}
         />
     );
 

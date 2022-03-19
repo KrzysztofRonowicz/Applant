@@ -98,6 +98,14 @@ const SellModal = ({plant_id, image, visible, changeFetching}) => {
     const [name, setName] = useState('');
     const [prize,setPrize] = useState(undefined);
 
+    const onPrizeChange = (text) => {
+        if (text !== '' || text !== '0' && text !== '00' && text !== '000') {
+            setPrize(text.replace(/[^0-9]/g, ''));
+        } else {
+            setPrize(undefined);
+        }
+    }
+
     async function addAd() {
         changeFetching(true);
         try {
@@ -122,8 +130,8 @@ const SellModal = ({plant_id, image, visible, changeFetching}) => {
     return (
         <View style={styles.modal}>
             <Input value={name} placeholder='Nazwa ogłoszenia' style={{margin: spacing.sm, marginBottom: 0}} onChangeText={(text) => setName(text)}/>
-            <Input value={prize} placeholder='Cena (PLN)' style={{ margin: spacing.sm }} keyboardType='numeric' onChangeText={(text) => setPrize(text)}/>
-            <Button style={{marginTop: spacing.sm}} onPress={() => addAd()}>DODAJ OGŁOSZENIE</Button>
+            <Input value={prize} placeholder='Cena (PLN)' style={{ margin: spacing.sm }} maxLength={3} keyboardType='numeric' onChangeText={(text) => onPrizeChange(text)}/>
+            <Button style={{marginTop: spacing.sm}} disabled={!prize || !name} onPress={() => addAd()}>DODAJ OGŁOSZENIE</Button>
         </View>
     );
 }
