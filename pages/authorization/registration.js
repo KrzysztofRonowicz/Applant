@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { TouchableWithoutFeedback, StyleSheet, View, Image, Keyboard, BackHandler, TouchableOpacity } from 'react-native';
+import { TouchableWithoutFeedback, StyleSheet, View, Image, Keyboard, BackHandler, TouchableOpacity, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as API from '../../api/apiMethods';
 import { Layout, Text, Icon, Input, Button, CheckBox, Tooltip } from '@ui-kitten/components';
 import Board from '../main/board';
+import { colors, labels, spacing } from '../../style/base';
+import { Linking } from 'react-native';
 
 const AlertIcon = (props) => (
     <Icon {...props} name='alert-circle-outline'/>
@@ -18,6 +20,7 @@ const Registration = ({navigation}) => {
     const [errorPath, setErrorPath] = useState('');
     const [secureTextEntry, setSecureTextEntry] = useState(true);
     const [termsChecked, setTermsChecked] = useState(false);
+    const [termsVisible, setTermsVisible] = useState(true);
 
     const toggleSecureEntry = () => {
         setSecureTextEntry(!secureTextEntry);
@@ -43,7 +46,7 @@ const Registration = ({navigation}) => {
 
     const TermsNoteButton = () => {
         return (
-            <TouchableOpacity style={{ marginBottom: 15 }} onPress={() => setTooltipVisible(true)}>
+            <TouchableOpacity style={{ marginBottom: 15 }} onPress={() => setTermsVisible(true)}>
                 <Text style={{ color: 'grey', fontWeight: 'bold' }}>Warunki użytkowania  </Text>
             </TouchableOpacity>
         );
@@ -98,32 +101,55 @@ const Registration = ({navigation}) => {
 
     return(
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-            <Layout style={{flex: 1, justifyContent: 'center', backgroundColor: '#25523B',}}>
-                <Image
-                    source={require('../../assets/background1.png')}
+            <Layout style={{flex: 1, justifyContent: 'center', backgroundColor: colors.appLightBackground,}}>
+                {termsVisible ?
+                    <View style={{ alignSelf: 'flex-start', marginTop: 60 }}>
+                        <Text style={{ ...labels.qsp, textAlign: 'center', fontWeight: 'bold', marginHorizontal: 50, marginBottom: spacing.md }}>Warunki użytkowania aplikacji Applant &copy;</Text>
+                        <ScrollView>
+                            <Text style={{ ...labels.qsm, textAlign: 'center', marginHorizontal: spacing.md }}>
+                                1. Dostęp i korzystanie z aplikacji Applant jest uzależnione od ukończenia procedury rejestracji za pomocą nazwy użytkownika, adresu e-mail i hasła.{"\n"}
+                                2. Rejestracja zostaje zakończona z chwilą poprawnego uzupełnienia wumaganych pól w formularzu rejestracji.{"\n"}
+                                3. Właściciel aplikacji zastrzega sobie prawo do wprowadzania zmian w zakresie usług i funkcji oferowanych w aplikacji Applant.{"\n"}
+                                4. Korzystanie z aplikacji Applant możliwe jest na urządzeniach posiadających system operacyjny Android 11 lub nowszy.{"\n"}
+                                5. Do pełnego działania wszystkich funkcji aplikacja Applant wymaga pozwolenia na korzystanie z lokalizacji.{"\n"}
+                                6. Korzystanie z tej aplikacji jest dozwolone wyłącznie w celach osobistych i niekomercyjnych. Zabronione jest jej rozpowszechnianie lub przekształcanie w całości lub częściowo.{"\n"}
+                                7. Korzystając z aplikacji użytkownik zobowiązuje się do odpowiedniego zachowania w konwersacjach z innymi użytkownikami – rozmowę z szacunkiem, bez wulgaryzmów i w oparciu o kulturę osobistą. 
+                                W przeciwnym razie administrator po zgłoszeniu konta użytkownika może je usunąć lub zawiesić do niego dostęp.{"\n\n"}
+                                {/* <Text><a href='kontakt.kpp@gmail.com'>kontak.kpp@gmail.com</a></Text> */}
+                                <Text style={{ color: colors.greenDark }}
+                                    onPress={() => Linking.openURL('mailto:applant.appplant@gmail.com')}>
+                                    applant.appplant@gmail.com
+                                </Text>
+                            </Text>
+                        </ScrollView>
+                        <Button style={{marginHorizontal: spacing.md, marginBottom: spacing.sm}} onPress={() => setTermsVisible(false)}>POWRÓT</Button>
+                    </View> : 
+                    <>
+                    <Image
+                        source={require('../../assets/background1.png')}
+                        style={{
+                            position: 'absolute',
+                            width: '100%',
+                            height: '100%',
+                        }}
+                    />
+                    <TouchableOpacity style={{position: 'absolute', left: 20, top: 40}} onPress={() => navigation.navigate('Login')}>
+                        <Icon fill='white' name={'arrow-back'} style={{width: 35, height:35}}/>
+                    </TouchableOpacity>
+                    <Text style={{color: 'black', fontSize: 50, fontFamily: 'Quicksand', alignSelf: 'center', marginBottom: 20}}>Witaj!</Text>
+                    <Text style={{color: 'black', fontSize: 20, fontFamily: 'Quicksand', alignSelf: 'center'}}>Zarejestruj się w Applant</Text>
+                    <View 
                     style={{
-                        position: 'absolute',
-                        width: '100%',
-                        height: '100%',
+                        marginHorizontal: 20, 
+                        paddingHorizontal: 10, 
+                        justifyContent: "center", 
+                        backgroundColor: "#F1F1F1", 
+                        paddingVertical: 30,
+                        marginVertical: 70,
+                        borderRadius: 10,
+                        elevation: 20,
                     }}
-                />
-                <TouchableOpacity style={{position: 'absolute', left: 20, top: 40}} onPress={() => navigation.navigate('Login')}>
-                    <Icon fill='white' name={'arrow-back'} style={{width: 35, height:35}}/>
-                </TouchableOpacity>
-                <Text style={{color: 'black', fontSize: 50, fontFamily: 'Quicksand', alignSelf: 'center', marginBottom: 20}}>Witaj!</Text>
-                <Text style={{color: 'black', fontSize: 20, fontFamily: 'Quicksand', alignSelf: 'center'}}>Zarejestruj się w Applant</Text>
-                <View 
-                style={{
-                    marginHorizontal: 20, 
-                    paddingHorizontal: 10, 
-                    justifyContent: "center", 
-                    backgroundColor: "#F1F1F1", 
-                    paddingVertical: 30,
-                    marginVertical: 70,
-                    borderRadius: 10,
-                    elevation: 20,
-                }}
-                >
+                    >
                     <Input
                         value={name}
                         placeholder='Nazwa użytkownika'
@@ -167,30 +193,32 @@ const Registration = ({navigation}) => {
                         </CheckBox>
                     </View>
                     <Button disabled={!termsChecked} onPress={() => connect()}>ZAREJESTRUJ</Button>
-                </View>
-                <View style={{bottom: 20, position: 'absolute', flexDirection: 'row', alignSelf: 'center'}}>
-                    <Text style={{
-                        padding: 3,
-                        backgroundColor: 'rgba(245,245,245, 0.5)',
-                        borderTopLeftRadius: 5,
-                        borderBottomLeftRadius: 5,
-                        fontSize: 17, 
-                        color: 'black', 
-                        fontFamily: 'Quicksand'
-                    }}> Posiadasz konto? </Text> 
-                    <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                    </View>
+                    <View style={{bottom: 20, position: 'absolute', flexDirection: 'row', alignSelf: 'center'}}>
                         <Text style={{
                             padding: 3,
                             backgroundColor: 'rgba(245,245,245, 0.5)',
-                            borderTopRightRadius: 5,
-                            borderBottomRightRadius: 5,
-                            fontWeight:'bold', 
+                            borderTopLeftRadius: 5,
+                            borderBottomLeftRadius: 5,
                             fontSize: 17, 
                             color: 'black', 
                             fontFamily: 'Quicksand'
-                        }}>Zaloguj się</Text>
-                    </TouchableOpacity> 
-                </View>
+                        }}> Posiadasz konto? </Text> 
+                        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                            <Text style={{
+                                padding: 3,
+                                backgroundColor: 'rgba(245,245,245, 0.5)',
+                                borderTopRightRadius: 5,
+                                borderBottomRightRadius: 5,
+                                fontWeight:'bold', 
+                                fontSize: 17, 
+                                color: 'black', 
+                                fontFamily: 'Quicksand'
+                            }}>Zaloguj się</Text>
+                        </TouchableOpacity> 
+                    </View>
+                    </>
+                }
             </Layout>
         </TouchableWithoutFeedback>
     )

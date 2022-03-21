@@ -30,8 +30,8 @@ const PlantAdParameters = ({ prize, water_index, light_index, compost_index }) =
     );
 }
 
-const PlantAd = ({ _id, name, image, water_index, light_index, compost_index, prize, onPlantSelect, adId, rawImage }) => (
-    <TouchableOpacity style={styles.plantContainer} activeOpacity={.6} onPress={() => onPlantSelect(_id, adId, name, prize, rawImage)}>
+const PlantAd = ({ _id, name, image, water_index, light_index, compost_index, prize, onPlantSelect, adId, rawImage, note }) => (
+    <TouchableOpacity style={styles.plantContainer} activeOpacity={.6} onPress={() => onPlantSelect(_id, adId, name, prize, rawImage, note)}>
         <View style={styles.plantImageContainer}>
             <Image style={styles.plantImage} source={{ uri: image}}/>
             <PlantAdParameters water_index={water_index} light_index={light_index} compost_index={compost_index} prize={prize}/>
@@ -45,6 +45,7 @@ const PlantAd = ({ _id, name, image, water_index, light_index, compost_index, pr
 const Search = ({route, navigation}) => {
     const [inputValue, setInputValue] = useState('');
     const [isFetchingData, setIsFetchingData] = useState(false);
+    const [localization, setLocalization] = useState(false);
     const [Od, setOd] = useState(null);
     const [Do, setDo] = useState(null);
     const [marketVisible, setMarketVisible] = useState(false);
@@ -74,6 +75,8 @@ const Search = ({route, navigation}) => {
                 setTimeout(() => {
                     setPlantVisible(false);
                     setMarketVisible(false);
+                    setFilterVisible(false);
+                    setSortVisible(false);
                 }, 100);
             };
         }, [])
@@ -105,10 +108,20 @@ const Search = ({route, navigation}) => {
     async function onPrizeChanged(text, name) {
         if (text !== '' || text !== '0' && text !== '00' && text.toString() !== '000') {
             if (name === 'od') {
-                if (Number(Do) >= Number(text)) { await setOd(text.replace(/[^0-9]/g, '')); searchMarketPlant(inputValue, text, Do, selectedSort)};
+                if (Number(Do) >= Number(text)) { 
+                    await setOd(text.replace(/[^0-9]/g, ''));
+                    // setTimeout(() => {
+                    //     searchMarketPlant(inputValue, text, Do, selectedSort)
+                    // }, 1000); 
+                };
             }
             if (name === 'do') {
-                if (Number(Od) <= Number(text)) { await setDo(text.replace(/[^0-9]/g, '')); searchMarketPlant(inputValue, Od, text, selectedSort)};
+                if (Number(Od) <= Number(text)) { 
+                    await setDo(text.replace(/[^0-9]/g, '')); 
+                    // setTimeout(() => {
+                    //     searchMarketPlant(inputValue, Od, text, selectedSort)
+                    // }, 1000);
+                };
             }
         } else {
             if (name === 'od') {
@@ -167,6 +180,7 @@ const Search = ({route, navigation}) => {
         } catch (error) {
             console.log(error);
         }
+        setLocalization(localization_enabled);
         if (localization_enabled === 'true') {
             let tmpResponseData = [];
             let position;
@@ -283,8 +297,8 @@ const Search = ({route, navigation}) => {
         }
     };
 
-    const onPlantSelect = (id, adId, name, prize, image) => {
-        setSelectedPlant([id, adId, name, prize, image]);
+    const onPlantSelect = (id, adId, name, prize, image, note) => {
+        setSelectedPlant([id, adId, name, prize, image, note]);
         setPlantVisible(true);
     };
 
@@ -309,11 +323,12 @@ const Search = ({route, navigation}) => {
             light_index={item.light_index} 
             compost_index={item.compost_index}
             onPlantSelect={onPlantSelect}
+            note=''
         />
     );
 
     const renderMarketItem = ({ item }) => (
-        <PlantAd _id={item.plant_id} name={item.name} rawImage={item.image} image={getImageUrl(item.image)} prize={item.prize} onPlantSelect={onPlantSelect} adId={item._id}/>
+        <PlantAd _id={item.plant_id} name={item.name} rawImage={item.image} image={getImageUrl(item.image)} prize={item.prize} note={item.note} onPlantSelect={onPlantSelect} adId={item._id}/>
     );
 
     const Parameter = ({text}) => {
@@ -394,6 +409,7 @@ const Search = ({route, navigation}) => {
                     name: selectedPlant[2],
                     prize: selectedPlant[3],
                     image: selectedPlant[4],
+                    note: selectedPlant[5],
                 }}
             /> :
         <Layout style={styles.layout}>
@@ -446,6 +462,7 @@ const Search = ({route, navigation}) => {
                         keyboardType='numeric'
                         onChangeText={(text) => onPrizeChanged(text, 'od')}
                         maxLength={3}
+                        onSubmitEditing={() => searchMarketPlant(inputValue, Od, Do, selectedSort) }
                     />
                     <Text style={{ ...labels.qsp, color: colors.greenDark, alignSelf: 'center' }}>-</Text>
                     <Input
@@ -457,10 +474,11 @@ const Search = ({route, navigation}) => {
                         keyboardType='numeric'
                         onChangeText={(text) => onPrizeChanged(text, 'do')}
                         maxLength={3}
+                        onSubmitEditing={() => searchMarketPlant(inputValue, Od, Do, selectedSort)}
                     />
                 </View>
                 <View style={{ paddingTop: spacing.xs }}>
-                    <Text style={{ ...labels.qsp, color: colors.greenDark, textAlign: 'center' }}>Odległość: {slider} (km)</Text>
+                    <Text style={[{ ...labels.qsp, color: colors.greenDark, textAlign: 'center' }, localization === 'false' ? { opacity: 0.5 } : <></>]}>Odległość: {slider} (km)</Text>
                     <View style={{ flexDirection: 'row' }}>
                         <Slider
                             containerStyle={{ flex: 1, marginHorizontal: spacing.xs }}
@@ -471,6 +489,7 @@ const Search = ({route, navigation}) => {
                             maximumValue={50}
                             step={1}
                             thumbTintColor={colors.greenDark}
+                            disabled={localization === 'false'}
                         />
                     </View>
                 </View>

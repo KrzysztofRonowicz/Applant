@@ -81,13 +81,13 @@ const Chat = ({ navigation }) => {
 
     const [responseData, setResponseData] = useState([]);
 
-    // useEffect(() => {
-    //     const unsubscribe = navigation.addListener('focus', () => {
-    //         getUser();
-    //         getPrefixMessages();
-    //     });
-    //     return unsubscribe;
-    // }, [navigation]);
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('focus', () => {
+            getUser();
+            getPrefixMessages();
+        });
+        return unsubscribe;
+    }, [navigation]);
 
     useFocusEffect(
         React.useCallback(() => {

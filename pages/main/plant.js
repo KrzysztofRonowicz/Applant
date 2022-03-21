@@ -97,6 +97,7 @@ export const AdToCollectionModal = ({onClose, collections, createPlant}) => {
 const SellModal = ({plant_id, image, visible, changeFetching}) => {
     const [name, setName] = useState('');
     const [prize,setPrize] = useState(undefined);
+    const [note, setNote] = useState('');
 
     const onPrizeChange = (text) => {
         if (text !== '' || text !== '0' && text !== '00' && text !== '000') {
@@ -113,7 +114,8 @@ const SellModal = ({plant_id, image, visible, changeFetching}) => {
                 plant_id: plant_id,
                 prize: prize,
                 name: name,
-                image: image
+                image: image,
+                note: note,
             },{
                 headers: {
                     'auth-token': await AsyncStorage.getItem('auth-token')
@@ -131,6 +133,15 @@ const SellModal = ({plant_id, image, visible, changeFetching}) => {
         <View style={styles.modal}>
             <Input value={name} placeholder='Nazwa ogłoszenia' style={{margin: spacing.sm, marginBottom: 0}} onChangeText={(text) => setName(text)}/>
             <Input value={prize} placeholder='Cena (PLN)' style={{ margin: spacing.sm }} maxLength={3} keyboardType='numeric' onChangeText={(text) => onPrizeChange(text)}/>
+            <Input 
+                multiline 
+                numberOfLines={4} 
+                textStyle={{width: 150}}
+                value={note} 
+                placeholder='Krótki opis ..' 
+                style={{ margin: spacing.sm }} 
+                scrollEnabled={true}
+                onChangeText={(text) => setNote(text)} />
             <Button style={{marginTop: spacing.sm}} disabled={!prize || !name} onPress={() => addAd()}>DODAJ OGŁOSZENIE</Button>
         </View>
     );
@@ -481,11 +492,6 @@ const Plant = ({plantId, onClose, status, adId, ad, roomName, roomId, label}) =>
                             <Icon type='material' name='close' size={25} color={colors.grayDark} />
                         </View>
                     </TouchableOpacity>
-                    {/* <TouchableOpacity
-                        style={{ position: 'absolute', bottom: 5, right: 10, width: 30, height: 30 }}
-                    >
-                        <Icon type='material' name='photo' size={30} color={colors.grayDark} />
-                    </TouchableOpacity> */}
                 </View>
                 <View style={styles.details}>
                     <Input
@@ -500,6 +506,19 @@ const Plant = ({plantId, onClose, status, adId, ad, roomName, roomId, label}) =>
                     <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
                         <Text style={{ ...labels.qsp, color: colors.grayDark }}>{responseData.species_name}</Text>
                     </View>
+                    {status === 'ad' && ad.name ? 
+                    <View style={{ marginTop: spacing.sm }}>
+                        <View>
+                            <View style={{ flexDirection: 'row' }}>
+                                <Text style={{ ...labels.qsm, fontWeight: 'bold' }}>{ad.name}</Text>
+                                <View style={{ backgroundColor: colors.white, paddingHorizontal: spacing.xs, borderRadius: rounding.sm, marginLeft: spacing.sm }}>
+                                    <Text style={{ ...labels.qsm, fontWeight: 'bold', color: colors.greenDark }}>{ad.prize} zł</Text>
+                                </View>
+                            </View>
+                        </View>
+                        <Text style={{ ...labels.qsm }}>{ad.note}</Text>
+                    </View>:<></>
+                    }
                     <View style={{flexDirection: 'row', marginVertical: spacing.md}}>
                         <PlantParameter index={indexes[0]} lightColor={colors.waterLight} darkColor={colors.waterDark} icon={'water'}/>
                         <PlantParameter index={indexes[1]} lightColor={colors.lightLight} darkColor={colors.lightDark} icon={'light'}/>
@@ -619,17 +638,18 @@ const styles = StyleSheet.create({
     },
     category: {
         height: 40,
-        backgroundColor: colors.greenMedium,
+        backgroundColor: colors.grayBackgroundLight,
         borderRadius: rounding.sm,
         paddingHorizontal: spacing.sm,
         paddingVertical: spacing.xs,
         marginBottom: 14,
         marginHorizontal: spacing.xs,
         justifyContent: 'center',
+        elevation: 5
     },
     categoryText: {
         ...labels.qsp,
-        color: colors.white,
+        color: colors.greenDark,
         alignSelf: 'center'
     },
     specialAction: {

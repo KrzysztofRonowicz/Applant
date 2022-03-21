@@ -329,7 +329,7 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
     }
 
     return(
-        plantVisible ? <Plant onClose={onPlantDetails} plantId={ad.plant_id} status={'ad'} label={true}/> :
+        plantVisible ? <Plant onClose={onPlantDetails} plantId={ad.plant_id} ad={ad} status={'ad'} label={true}/> :
         <>
         <Layout style={styles.layout}>
             <Modal onBackdropPress={() => setCollectionModalVisible(false)} visible={collectionModalVisible}>
