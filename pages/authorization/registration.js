@@ -20,7 +20,7 @@ const Registration = ({navigation}) => {
     const [errorPath, setErrorPath] = useState('');
     const [secureTextEntry, setSecureTextEntry] = useState(true);
     const [termsChecked, setTermsChecked] = useState(false);
-    const [termsVisible, setTermsVisible] = useState(true);
+    const [termsVisible, setTermsVisible] = useState(false);
 
     const toggleSecureEntry = () => {
         setSecureTextEntry(!secureTextEntry);

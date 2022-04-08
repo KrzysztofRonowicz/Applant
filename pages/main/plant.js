@@ -516,7 +516,9 @@ const Plant = ({plantId, onClose, status, adId, ad, roomName, roomId, label}) =>
                                 </View>
                             </View>
                         </View>
-                        <Text style={{ ...labels.qsm }}>{ad.note}</Text>
+                        {ad.note ? 
+                            <Text style={{ ...labels.qsm }}>{ad.note}</Text>:<></>
+                        }
                     </View>:<></>
                     }
                     <View style={{flexDirection: 'row', marginVertical: spacing.md}}>
@@ -645,7 +647,7 @@ const styles = StyleSheet.create({
         marginBottom: 14,
         marginHorizontal: spacing.xs,
         justifyContent: 'center',
-        elevation: 5
+        elevation: 1
     },
     categoryText: {
         ...labels.qsp,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Text, Input, Radio, Tooltip, OverflowMenu, MenuItem } from '@ui-kitten/components';
+import { Layout, Text, Input, Radio, } from '@ui-kitten/components';
 import { Icon } from 'react-native-elements'
 import Plant, { LoadingBlur } from './plant';
 import { StyleSheet, TouchableOpacity, View, FlatList, Dimensions, Image } from 'react-native';

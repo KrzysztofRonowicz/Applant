@@ -3,7 +3,7 @@ import { Layout, Text, Modal, Input, Button } from '@ui-kitten/components';
 import { StyleSheet, View, FlatList, TouchableOpacity, Image, Dimensions, TouchableWithoutFeedback } from 'react-native';
 import { labels, colors, spacing, rounding } from '../../style/base';
 import { Icon } from 'react-native-elements'
-import Plant, { LoadingBlur, showRemovedPlantToast } from './plant';
+import Plant, { LoadingBlur } from './plant';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as API from '../../api/apiMethods';
 import { LoadingScreen } from './board';
@@ -272,6 +272,10 @@ const Collections = ({navigation}) => {
 
     const insertPlantAbove = (collectionId, plantId) => {
         const currentRow = collections.findIndex(collection => collection._id === collectionId);
+        if (currentRow === 0 && collections.length === 2) {
+            addPlantToCollection(collections[1]._id, plantId);
+            removePlantFromCollection(collectionId, plantId);
+        }
         if (currentRow !== 0) {
             const aboveCollectionId = collections[currentRow - 1]._id;
             addPlantToCollection(aboveCollectionId, plantId);
@@ -281,6 +285,10 @@ const Collections = ({navigation}) => {
 
     const insertPlantBelow = (collectionId, plantId) => {
         const currentRow = collections.findIndex(collection => collection._id === collectionId);
+        if (currentRow === collections.length - 1 && collections.length === 2) {
+            addPlantToCollection(collections[0]._id, plantId);
+            removePlantFromCollection(collectionId, plantId);
+        }
         if (currentRow !== collections.length - 1) {
             const belowCollectionId = collections[currentRow + 1]._id;
             addPlantToCollection(belowCollectionId, plantId);

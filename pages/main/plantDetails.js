@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Text, Calendar, Modal, Button, Datepicker, NativeDateService  } from '@ui-kitten/components';
 import { StyleSheet, View, FlatList, TouchableOpacity, Image, Dimensions, ScrollView } from 'react-native';
 import { labels, colors, spacing, rounding } from '../../style/base';
@@ -46,7 +46,7 @@ const ClimatePlantParameter = ({ data, onModal }) => (
     <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.grayLight }}>
         <TouchableOpacity
             style={[styles.plantParameterImage, { backgroundColor: alertsImagesDarkColors(data.name) }]}
-            onPress={() => onModal(data)}
+            onPress={() => {onModal(data);}}
         >
             <Image source={alertsImages(data.name)} style={{ alignSelf: 'center', width: 30, height: 30 }} />
         </TouchableOpacity>
@@ -318,7 +318,7 @@ export const Climate = ({ onTouchCategory, plantId, climateData, status, fullAcc
     const [sliderValue, setSliderValue] = useState([40,60]);
     const [selectedParameter, setSelectedParameter] = useState(climateData[0]);
     const [selectedUnit, setSelectedUnit] = useState(undefined);
-    const [actualValue, setActualValue] = useState(undefined);
+    const [actualValue, setActualValue] = useState([0]);
 
     const [requestData, setRequestData] = useState(climateData);
     const [responseData, setResponseData] = useState(climateData);
@@ -341,7 +341,7 @@ export const Climate = ({ onTouchCategory, plantId, climateData, status, fullAcc
         let foundIndex = tmpRequestData.findIndex(parameter => parameter._id === selectedParameter._id);
         tmpRequestData[foundIndex].value[0].min = sliderValue[0];
         tmpRequestData[foundIndex].value[0].max = sliderValue[1];
-        tmpRequestData[foundIndex].actual_value = actualValue[0];
+        if (actualValue[0]) tmpRequestData[foundIndex].actual_value = actualValue[0];
         tmpRequestData[foundIndex].modified = true;
         setRequestData(tmpRequestData);
     }
