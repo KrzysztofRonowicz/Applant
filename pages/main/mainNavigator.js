@@ -57,7 +57,7 @@ const MainNavigator = () => {
 							},
 							tabBarStyle: {
 								backgroundColor: 'white',
-							}
+							},
 						})}
 						style={{
 							elevation: 0

@@ -310,15 +310,11 @@ const Search = ({route, navigation}) => {
         setPlantVisible(false);
     };
 
-    const getImageUrl = (id) => {
-        return 'https://drive.google.com/uc?id=' + id;
-    };
-
     const renderItem = ({ item }) => (
         <PlantAd 
             _id={item._id}
             name={item.name} 
-            image={getImageUrl(item.image)} 
+            image={item.image} 
             water_index={item.water_index} 
             light_index={item.light_index} 
             compost_index={item.compost_index}
@@ -328,7 +324,7 @@ const Search = ({route, navigation}) => {
     );
 
     const renderMarketItem = ({ item }) => (
-        <PlantAd _id={item.plant_id} name={item.name} rawImage={item.image} image={getImageUrl(item.image)} prize={item.prize} note={item.note} onPlantSelect={onPlantSelect} adId={item._id}/>
+        <PlantAd _id={item.plant_id} name={item.name} rawImage={item.image} image={item.image} prize={item.prize} note={item.note} onPlantSelect={onPlantSelect} adId={item._id}/>
     );
 
     const Parameter = ({text}) => {

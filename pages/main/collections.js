@@ -11,10 +11,6 @@ import LottieView from 'lottie-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 
-const getImageUrl = (id) => {
-    return 'https://drive.google.com/uc?id=' + id;
-};
-
 const PlantCard = ({plantData, insertPlantAbove, insertPlantBelow, onPlantSelect, count}) => {
     const [moveEnabled, setMoveEnabled] = useState(false);
     const [isFetchingData, setIsFetchingData] = useState(false);
@@ -25,7 +21,7 @@ const PlantCard = ({plantData, insertPlantAbove, insertPlantBelow, onPlantSelect
 
     return (
         <TouchableOpacity style={styles.collectionPlant} activeOpacity={.6} onLongPress={onMovePress} onPress={() => onPlantSelect(plantData._id)}>
-            <Image source={{ uri: getImageUrl(plantData.image) }} style={styles.collectionPlantImage} />
+            <Image source={{ uri: plantData.image }} style={styles.collectionPlantImage} />
             <Text numberOfLines={1} ellipsizeMode='tail' style={styles.collectionPlantName}>{plantData.name}</Text>
             {moveEnabled && count > 1 ? isFetchingData ? <LoadingBlur isFetching={true}/> :
                 <View style={{ position: 'absolute', width: '100%', height: '100%' }}>

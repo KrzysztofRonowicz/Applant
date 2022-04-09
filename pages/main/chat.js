@@ -11,7 +11,7 @@ import LottieView from 'lottie-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
 const getImageUrl = (id) => {
-    return 'https://drive.google.com/uc?id=' + id;
+    return `https://drive.google.com/uc?id=${id}`;
 };
 
 const printConversationMember = (id, users) => {
@@ -45,7 +45,7 @@ const PrefixMessageText = ({id, senderId, readed, message}) => {
 
 const Ticket = ({ data, onMessageSelect, user_id }) => (
     <View style={styles.ticketContainer}>
-        <Image source={{uri: getImageUrl(data.ad.image)}} style={styles.ticketImage}/>
+        <Image source={{uri: data.ad.image}} style={styles.ticketImage}/>
         <View style={styles.ticketContent}>
             <TouchableOpacity 
                 style={{ alignSelf: 'flex-start', width: '100%' }} 

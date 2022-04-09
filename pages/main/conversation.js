@@ -32,10 +32,6 @@ const DirectedMessage = ({message, sender, user}) => {
     return setDirection();
 }
 
-const getImageUrl = (id) => {
-    return 'https://drive.google.com/uc?id=' + id;
-};
-
 const Message = ({message, sender_id, user_id}) => (
     <DirectedMessage sender={sender_id} message={message} user={user_id}/>
 );
@@ -343,7 +339,7 @@ const Conversation = ({ onMessageClose, ad_id, owner_id, ad }) => {
                     <Icon color={colors.grayDark} name={'arrow-back'} size={28} />
                 </TouchableOpacity>
                 <View style={styles.ad}>
-                    <Image source={{uri: getImageUrl(ad.image)}} style={styles.adImage}/>
+                    <Image source={{uri: ad.image}} style={styles.adImage}/>
                     <View style={{ flex: 1 }}>
                         <Text style={{ ...labels.qsm, fontWeight: 'bold', color: colors.white }}>{ad.name}</Text>
                         <Text style={{ ...labels.qxs, fontWeight: 'bold', color: colors.grayLight }}>{ad.prize} zł</Text>

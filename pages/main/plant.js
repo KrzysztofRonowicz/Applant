@@ -240,7 +240,7 @@ const Plant = ({plantId, onClose, status, adId, ad, roomName, roomId, label}) =>
 
     useEffect(() => {
         setPlantName(responseData.name);
-        setImageUrl('https://drive.google.com/uc?id=' + responseData.image)
+        setImageUrl(responseData.image);
         setIndexes([responseData.water_index, responseData.light_index, responseData.compost_index]);
     }, [responseData]);
 
@@ -482,7 +482,7 @@ const Plant = ({plantId, onClose, status, adId, ad, roomName, roomId, label}) =>
             <ScrollView showsVerticalScrollIndicator={false}>
             <View style={styles.container}>
                 <View style={styles.imageContainer}>
-                    <Image style={{ flex: 1, marginHorizontal: spacing.xs, borderTopRightRadius: rounding.sm, borderTopLeftRadius: rounding.sm}} source={{ uri: imageUrl}}/>
+                        <Image style={{ flex: 1, marginHorizontal: spacing.xs, borderTopRightRadius: rounding.sm, borderTopLeftRadius: rounding.sm }} source={{ uri: imageUrl}}/>
                     <TouchableOpacity
                     activeOpacity={1}
                         style={{ position: 'absolute', right: 10, width: 30, height: 35, paddingTop: 4 }}
@@ -588,9 +588,9 @@ const styles = StyleSheet.create({
         borderTopColor: '#DCDCDC',
     },
     container: {
-        minHeight: Dimensions.get('window').height - 100,
+        minHeight: Dimensions.get('screen').height - 170,
         alignItems: 'center',
-        paddingTop: spacing.xs,
+        paddingVertical: spacing.xs,
         backgroundColor: colors.appLightBackground,
     },
     imageContainer: {
@@ -604,7 +604,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.md,
         paddingTop: spacing.lg,
         marginHorizontal: spacing.xs,
-        marginBottom: spacing.xs,
         borderBottomLeftRadius: rounding.md,
         borderBottomRightRadius: rounding.md,
     },

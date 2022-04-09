@@ -11,10 +11,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
 import { sameLessDay } from './plantDetails';
 
-const getImageUrl = (id) => {
-    return 'https://drive.google.com/uc?id=' + id;
-};
-
 export const LoadingScreen = (text) => {
     return(
         <View style={styles.loadingScreen}>
@@ -76,7 +72,7 @@ const TicketButton = ({data, onUpdateTicket, inactive}) => {
 
 const Ticket = ({data, onPlantSelect, onUpdateTicket, inactive}) => (
     <View style={styles.ticketContainer}>
-        <Image style={styles.ticketImage} source={{uri: getImageUrl(data.image)}}/>
+        <Image style={styles.ticketImage} source={{uri: data.image}}/>
         <View style={styles.ticketContent}>
             <TouchableOpacity style={{ alignSelf: 'flex-start' }} onPress={() => onPlantSelect(data.plant_id)}>
                 <Text style={styles.ticketName}>{data.plant_name}</Text>
